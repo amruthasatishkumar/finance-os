@@ -12,7 +12,7 @@ export default async function IncomePage() {
   const assumptions = summary?.assumptions
   const profile = summary?.profile
   const grossAnnual = (summary?.grossMonthly ?? 0) * 12
-  const preTaxDeductions = (assumptions as any)?.preTaxDeductions ?? 23500
+  const preTaxDeductions = (assumptions as any)?.preTaxDeductions ?? 0
 
   const taxBreakdown = grossAnnual > 0
     ? calcAnnualNetIncome(

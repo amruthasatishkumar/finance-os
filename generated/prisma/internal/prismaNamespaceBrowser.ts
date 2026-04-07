@@ -122,6 +122,7 @@ export const FinancialAssumptionsScalarFieldEnum = {
   stateTaxRate: 'stateTaxRate',
   effectiveFederalRate: 'effectiveFederalRate',
   filingStatus: 'filingStatus',
+  preTaxDeductions: 'preTaxDeductions',
   emergencyFundMonths: 'emergencyFundMonths',
   retirementAge: 'retirementAge',
   lifeExpectancy: 'lifeExpectancy',

@@ -78,7 +78,7 @@ export function SettingsClient({ profile, assumptions }: Props) {
       includeSocialSecurity: assumptions?.includeSocialSecurity ?? false,
       safeWithdrawalRate: assumptions?.safeWithdrawalRate ?? 0.04,
       usdToInrRate: assumptions?.usdToInrRate ?? 83.5,
-      preTaxDeductions: (assumptions as any)?.preTaxDeductions ?? 23500,
+      preTaxDeductions: (assumptions as any)?.preTaxDeductions ?? 0,
     },
   })
 
@@ -207,10 +207,10 @@ export function SettingsClient({ profile, assumptions }: Props) {
               </div>
             ))}
             <div className="col-span-2">
-              <label className={labelClass}>Annual Pre-tax Deductions ($)</label>
+              <label className={labelClass}>Annual Pre-tax Deductions ($) — Optional</label>
               <input {...assumptionsForm.register('preTaxDeductions' as any)} type="number" step="500" className={inputClass} />
               <p className="text-xs text-[#64748B] mt-1">
-                Total of 401k traditional + HSA + FSA contributions per year. Reduces your federal and state taxable income. Max 401k 2025: $23,500. Max HSA: $4,300.
+                Leave at 0 for a pure IRS bracket estimate. Enter your 401k traditional + HSA contributions here only if you want to see the exact take-home after those come out. Your paycheck already reflects this. Example: $3,600/yr if you contribute $150/paycheck × 24.
               </p>
             </div>
             <div className="col-span-2">

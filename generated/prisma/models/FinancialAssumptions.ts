@@ -34,6 +34,7 @@ export type FinancialAssumptionsAvgAggregateOutputType = {
   optimisticReturnRate: number | null
   stateTaxRate: number | null
   effectiveFederalRate: number | null
+  preTaxDeductions: number | null
   emergencyFundMonths: number | null
   retirementAge: number | null
   lifeExpectancy: number | null
@@ -50,6 +51,7 @@ export type FinancialAssumptionsSumAggregateOutputType = {
   optimisticReturnRate: number | null
   stateTaxRate: number | null
   effectiveFederalRate: number | null
+  preTaxDeductions: number | null
   emergencyFundMonths: number | null
   retirementAge: number | null
   lifeExpectancy: number | null
@@ -69,6 +71,7 @@ export type FinancialAssumptionsMinAggregateOutputType = {
   stateTaxRate: number | null
   effectiveFederalRate: number | null
   filingStatus: string | null
+  preTaxDeductions: number | null
   emergencyFundMonths: number | null
   retirementAge: number | null
   lifeExpectancy: number | null
@@ -91,6 +94,7 @@ export type FinancialAssumptionsMaxAggregateOutputType = {
   stateTaxRate: number | null
   effectiveFederalRate: number | null
   filingStatus: string | null
+  preTaxDeductions: number | null
   emergencyFundMonths: number | null
   retirementAge: number | null
   lifeExpectancy: number | null
@@ -113,6 +117,7 @@ export type FinancialAssumptionsCountAggregateOutputType = {
   stateTaxRate: number
   effectiveFederalRate: number
   filingStatus: number
+  preTaxDeductions: number
   emergencyFundMonths: number
   retirementAge: number
   lifeExpectancy: number
@@ -134,6 +139,7 @@ export type FinancialAssumptionsAvgAggregateInputType = {
   optimisticReturnRate?: true
   stateTaxRate?: true
   effectiveFederalRate?: true
+  preTaxDeductions?: true
   emergencyFundMonths?: true
   retirementAge?: true
   lifeExpectancy?: true
@@ -150,6 +156,7 @@ export type FinancialAssumptionsSumAggregateInputType = {
   optimisticReturnRate?: true
   stateTaxRate?: true
   effectiveFederalRate?: true
+  preTaxDeductions?: true
   emergencyFundMonths?: true
   retirementAge?: true
   lifeExpectancy?: true
@@ -169,6 +176,7 @@ export type FinancialAssumptionsMinAggregateInputType = {
   stateTaxRate?: true
   effectiveFederalRate?: true
   filingStatus?: true
+  preTaxDeductions?: true
   emergencyFundMonths?: true
   retirementAge?: true
   lifeExpectancy?: true
@@ -191,6 +199,7 @@ export type FinancialAssumptionsMaxAggregateInputType = {
   stateTaxRate?: true
   effectiveFederalRate?: true
   filingStatus?: true
+  preTaxDeductions?: true
   emergencyFundMonths?: true
   retirementAge?: true
   lifeExpectancy?: true
@@ -213,6 +222,7 @@ export type FinancialAssumptionsCountAggregateInputType = {
   stateTaxRate?: true
   effectiveFederalRate?: true
   filingStatus?: true
+  preTaxDeductions?: true
   emergencyFundMonths?: true
   retirementAge?: true
   lifeExpectancy?: true
@@ -322,6 +332,7 @@ export type FinancialAssumptionsGroupByOutputType = {
   stateTaxRate: number
   effectiveFederalRate: number
   filingStatus: string
+  preTaxDeductions: number
   emergencyFundMonths: number
   retirementAge: number
   lifeExpectancy: number
@@ -367,6 +378,7 @@ export type FinancialAssumptionsWhereInput = {
   stateTaxRate?: Prisma.FloatFilter<"FinancialAssumptions"> | number
   effectiveFederalRate?: Prisma.FloatFilter<"FinancialAssumptions"> | number
   filingStatus?: Prisma.StringFilter<"FinancialAssumptions"> | string
+  preTaxDeductions?: Prisma.FloatFilter<"FinancialAssumptions"> | number
   emergencyFundMonths?: Prisma.IntFilter<"FinancialAssumptions"> | number
   retirementAge?: Prisma.IntFilter<"FinancialAssumptions"> | number
   lifeExpectancy?: Prisma.IntFilter<"FinancialAssumptions"> | number
@@ -390,6 +402,7 @@ export type FinancialAssumptionsOrderByWithRelationInput = {
   stateTaxRate?: Prisma.SortOrder
   effectiveFederalRate?: Prisma.SortOrder
   filingStatus?: Prisma.SortOrder
+  preTaxDeductions?: Prisma.SortOrder
   emergencyFundMonths?: Prisma.SortOrder
   retirementAge?: Prisma.SortOrder
   lifeExpectancy?: Prisma.SortOrder
@@ -416,6 +429,7 @@ export type FinancialAssumptionsWhereUniqueInput = Prisma.AtLeast<{
   stateTaxRate?: Prisma.FloatFilter<"FinancialAssumptions"> | number
   effectiveFederalRate?: Prisma.FloatFilter<"FinancialAssumptions"> | number
   filingStatus?: Prisma.StringFilter<"FinancialAssumptions"> | string
+  preTaxDeductions?: Prisma.FloatFilter<"FinancialAssumptions"> | number
   emergencyFundMonths?: Prisma.IntFilter<"FinancialAssumptions"> | number
   retirementAge?: Prisma.IntFilter<"FinancialAssumptions"> | number
   lifeExpectancy?: Prisma.IntFilter<"FinancialAssumptions"> | number
@@ -439,6 +453,7 @@ export type FinancialAssumptionsOrderByWithAggregationInput = {
   stateTaxRate?: Prisma.SortOrder
   effectiveFederalRate?: Prisma.SortOrder
   filingStatus?: Prisma.SortOrder
+  preTaxDeductions?: Prisma.SortOrder
   emergencyFundMonths?: Prisma.SortOrder
   retirementAge?: Prisma.SortOrder
   lifeExpectancy?: Prisma.SortOrder
@@ -469,6 +484,7 @@ export type FinancialAssumptionsScalarWhereWithAggregatesInput = {
   stateTaxRate?: Prisma.FloatWithAggregatesFilter<"FinancialAssumptions"> | number
   effectiveFederalRate?: Prisma.FloatWithAggregatesFilter<"FinancialAssumptions"> | number
   filingStatus?: Prisma.StringWithAggregatesFilter<"FinancialAssumptions"> | string
+  preTaxDeductions?: Prisma.FloatWithAggregatesFilter<"FinancialAssumptions"> | number
   emergencyFundMonths?: Prisma.IntWithAggregatesFilter<"FinancialAssumptions"> | number
   retirementAge?: Prisma.IntWithAggregatesFilter<"FinancialAssumptions"> | number
   lifeExpectancy?: Prisma.IntWithAggregatesFilter<"FinancialAssumptions"> | number
@@ -490,6 +506,7 @@ export type FinancialAssumptionsCreateInput = {
   stateTaxRate?: number
   effectiveFederalRate?: number
   filingStatus?: string
+  preTaxDeductions?: number
   emergencyFundMonths?: number
   retirementAge?: number
   lifeExpectancy?: number
@@ -513,6 +530,7 @@ export type FinancialAssumptionsUncheckedCreateInput = {
   stateTaxRate?: number
   effectiveFederalRate?: number
   filingStatus?: string
+  preTaxDeductions?: number
   emergencyFundMonths?: number
   retirementAge?: number
   lifeExpectancy?: number
@@ -534,6 +552,7 @@ export type FinancialAssumptionsUpdateInput = {
   stateTaxRate?: Prisma.FloatFieldUpdateOperationsInput | number
   effectiveFederalRate?: Prisma.FloatFieldUpdateOperationsInput | number
   filingStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  preTaxDeductions?: Prisma.FloatFieldUpdateOperationsInput | number
   emergencyFundMonths?: Prisma.IntFieldUpdateOperationsInput | number
   retirementAge?: Prisma.IntFieldUpdateOperationsInput | number
   lifeExpectancy?: Prisma.IntFieldUpdateOperationsInput | number
@@ -557,6 +576,7 @@ export type FinancialAssumptionsUncheckedUpdateInput = {
   stateTaxRate?: Prisma.FloatFieldUpdateOperationsInput | number
   effectiveFederalRate?: Prisma.FloatFieldUpdateOperationsInput | number
   filingStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  preTaxDeductions?: Prisma.FloatFieldUpdateOperationsInput | number
   emergencyFundMonths?: Prisma.IntFieldUpdateOperationsInput | number
   retirementAge?: Prisma.IntFieldUpdateOperationsInput | number
   lifeExpectancy?: Prisma.IntFieldUpdateOperationsInput | number
@@ -579,6 +599,7 @@ export type FinancialAssumptionsCreateManyInput = {
   stateTaxRate?: number
   effectiveFederalRate?: number
   filingStatus?: string
+  preTaxDeductions?: number
   emergencyFundMonths?: number
   retirementAge?: number
   lifeExpectancy?: number
@@ -600,6 +621,7 @@ export type FinancialAssumptionsUpdateManyMutationInput = {
   stateTaxRate?: Prisma.FloatFieldUpdateOperationsInput | number
   effectiveFederalRate?: Prisma.FloatFieldUpdateOperationsInput | number
   filingStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  preTaxDeductions?: Prisma.FloatFieldUpdateOperationsInput | number
   emergencyFundMonths?: Prisma.IntFieldUpdateOperationsInput | number
   retirementAge?: Prisma.IntFieldUpdateOperationsInput | number
   lifeExpectancy?: Prisma.IntFieldUpdateOperationsInput | number
@@ -622,6 +644,7 @@ export type FinancialAssumptionsUncheckedUpdateManyInput = {
   stateTaxRate?: Prisma.FloatFieldUpdateOperationsInput | number
   effectiveFederalRate?: Prisma.FloatFieldUpdateOperationsInput | number
   filingStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  preTaxDeductions?: Prisma.FloatFieldUpdateOperationsInput | number
   emergencyFundMonths?: Prisma.IntFieldUpdateOperationsInput | number
   retirementAge?: Prisma.IntFieldUpdateOperationsInput | number
   lifeExpectancy?: Prisma.IntFieldUpdateOperationsInput | number
@@ -649,6 +672,7 @@ export type FinancialAssumptionsCountOrderByAggregateInput = {
   stateTaxRate?: Prisma.SortOrder
   effectiveFederalRate?: Prisma.SortOrder
   filingStatus?: Prisma.SortOrder
+  preTaxDeductions?: Prisma.SortOrder
   emergencyFundMonths?: Prisma.SortOrder
   retirementAge?: Prisma.SortOrder
   lifeExpectancy?: Prisma.SortOrder
@@ -668,6 +692,7 @@ export type FinancialAssumptionsAvgOrderByAggregateInput = {
   optimisticReturnRate?: Prisma.SortOrder
   stateTaxRate?: Prisma.SortOrder
   effectiveFederalRate?: Prisma.SortOrder
+  preTaxDeductions?: Prisma.SortOrder
   emergencyFundMonths?: Prisma.SortOrder
   retirementAge?: Prisma.SortOrder
   lifeExpectancy?: Prisma.SortOrder
@@ -687,6 +712,7 @@ export type FinancialAssumptionsMaxOrderByAggregateInput = {
   stateTaxRate?: Prisma.SortOrder
   effectiveFederalRate?: Prisma.SortOrder
   filingStatus?: Prisma.SortOrder
+  preTaxDeductions?: Prisma.SortOrder
   emergencyFundMonths?: Prisma.SortOrder
   retirementAge?: Prisma.SortOrder
   lifeExpectancy?: Prisma.SortOrder
@@ -709,6 +735,7 @@ export type FinancialAssumptionsMinOrderByAggregateInput = {
   stateTaxRate?: Prisma.SortOrder
   effectiveFederalRate?: Prisma.SortOrder
   filingStatus?: Prisma.SortOrder
+  preTaxDeductions?: Prisma.SortOrder
   emergencyFundMonths?: Prisma.SortOrder
   retirementAge?: Prisma.SortOrder
   lifeExpectancy?: Prisma.SortOrder
@@ -728,6 +755,7 @@ export type FinancialAssumptionsSumOrderByAggregateInput = {
   optimisticReturnRate?: Prisma.SortOrder
   stateTaxRate?: Prisma.SortOrder
   effectiveFederalRate?: Prisma.SortOrder
+  preTaxDeductions?: Prisma.SortOrder
   emergencyFundMonths?: Prisma.SortOrder
   retirementAge?: Prisma.SortOrder
   lifeExpectancy?: Prisma.SortOrder
@@ -786,6 +814,7 @@ export type FinancialAssumptionsCreateWithoutUserInput = {
   stateTaxRate?: number
   effectiveFederalRate?: number
   filingStatus?: string
+  preTaxDeductions?: number
   emergencyFundMonths?: number
   retirementAge?: number
   lifeExpectancy?: number
@@ -807,6 +836,7 @@ export type FinancialAssumptionsUncheckedCreateWithoutUserInput = {
   stateTaxRate?: number
   effectiveFederalRate?: number
   filingStatus?: string
+  preTaxDeductions?: number
   emergencyFundMonths?: number
   retirementAge?: number
   lifeExpectancy?: number
@@ -844,6 +874,7 @@ export type FinancialAssumptionsUpdateWithoutUserInput = {
   stateTaxRate?: Prisma.FloatFieldUpdateOperationsInput | number
   effectiveFederalRate?: Prisma.FloatFieldUpdateOperationsInput | number
   filingStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  preTaxDeductions?: Prisma.FloatFieldUpdateOperationsInput | number
   emergencyFundMonths?: Prisma.IntFieldUpdateOperationsInput | number
   retirementAge?: Prisma.IntFieldUpdateOperationsInput | number
   lifeExpectancy?: Prisma.IntFieldUpdateOperationsInput | number
@@ -865,6 +896,7 @@ export type FinancialAssumptionsUncheckedUpdateWithoutUserInput = {
   stateTaxRate?: Prisma.FloatFieldUpdateOperationsInput | number
   effectiveFederalRate?: Prisma.FloatFieldUpdateOperationsInput | number
   filingStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  preTaxDeductions?: Prisma.FloatFieldUpdateOperationsInput | number
   emergencyFundMonths?: Prisma.IntFieldUpdateOperationsInput | number
   retirementAge?: Prisma.IntFieldUpdateOperationsInput | number
   lifeExpectancy?: Prisma.IntFieldUpdateOperationsInput | number
@@ -889,6 +921,7 @@ export type FinancialAssumptionsSelect<ExtArgs extends runtime.Types.Extensions.
   stateTaxRate?: boolean
   effectiveFederalRate?: boolean
   filingStatus?: boolean
+  preTaxDeductions?: boolean
   emergencyFundMonths?: boolean
   retirementAge?: boolean
   lifeExpectancy?: boolean
@@ -912,6 +945,7 @@ export type FinancialAssumptionsSelectCreateManyAndReturn<ExtArgs extends runtim
   stateTaxRate?: boolean
   effectiveFederalRate?: boolean
   filingStatus?: boolean
+  preTaxDeductions?: boolean
   emergencyFundMonths?: boolean
   retirementAge?: boolean
   lifeExpectancy?: boolean
@@ -935,6 +969,7 @@ export type FinancialAssumptionsSelectUpdateManyAndReturn<ExtArgs extends runtim
   stateTaxRate?: boolean
   effectiveFederalRate?: boolean
   filingStatus?: boolean
+  preTaxDeductions?: boolean
   emergencyFundMonths?: boolean
   retirementAge?: boolean
   lifeExpectancy?: boolean
@@ -958,6 +993,7 @@ export type FinancialAssumptionsSelectScalar = {
   stateTaxRate?: boolean
   effectiveFederalRate?: boolean
   filingStatus?: boolean
+  preTaxDeductions?: boolean
   emergencyFundMonths?: boolean
   retirementAge?: boolean
   lifeExpectancy?: boolean
@@ -969,7 +1005,7 @@ export type FinancialAssumptionsSelectScalar = {
   updatedAt?: boolean
 }
 
-export type FinancialAssumptionsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "inflationRate" | "salaryGrowthRate" | "investmentReturnRate" | "conservativeReturnRate" | "optimisticReturnRate" | "stateTaxRate" | "effectiveFederalRate" | "filingStatus" | "emergencyFundMonths" | "retirementAge" | "lifeExpectancy" | "includeSocialSecurity" | "estimatedSSBenefit" | "safeWithdrawalRate" | "usdToInrRate" | "createdAt" | "updatedAt", ExtArgs["result"]["financialAssumptions"]>
+export type FinancialAssumptionsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "inflationRate" | "salaryGrowthRate" | "investmentReturnRate" | "conservativeReturnRate" | "optimisticReturnRate" | "stateTaxRate" | "effectiveFederalRate" | "filingStatus" | "preTaxDeductions" | "emergencyFundMonths" | "retirementAge" | "lifeExpectancy" | "includeSocialSecurity" | "estimatedSSBenefit" | "safeWithdrawalRate" | "usdToInrRate" | "createdAt" | "updatedAt", ExtArgs["result"]["financialAssumptions"]>
 export type FinancialAssumptionsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserProfileDefaultArgs<ExtArgs>
 }
@@ -996,6 +1032,7 @@ export type $FinancialAssumptionsPayload<ExtArgs extends runtime.Types.Extension
     stateTaxRate: number
     effectiveFederalRate: number
     filingStatus: string
+    preTaxDeductions: number
     emergencyFundMonths: number
     retirementAge: number
     lifeExpectancy: number
@@ -1439,6 +1476,7 @@ export interface FinancialAssumptionsFieldRefs {
   readonly stateTaxRate: Prisma.FieldRef<"FinancialAssumptions", 'Float'>
   readonly effectiveFederalRate: Prisma.FieldRef<"FinancialAssumptions", 'Float'>
   readonly filingStatus: Prisma.FieldRef<"FinancialAssumptions", 'String'>
+  readonly preTaxDeductions: Prisma.FieldRef<"FinancialAssumptions", 'Float'>
   readonly emergencyFundMonths: Prisma.FieldRef<"FinancialAssumptions", 'Int'>
   readonly retirementAge: Prisma.FieldRef<"FinancialAssumptions", 'Int'>
   readonly lifeExpectancy: Prisma.FieldRef<"FinancialAssumptions", 'Int'>

@@ -33,7 +33,7 @@ export async function getFinancialSummary() {
     incomeSources,
     assumptions.filingStatus,
     assumptions.stateTaxRate,
-    (assumptions as any).preTaxDeductions ?? 23500,
+    (assumptions as any).preTaxDeductions ?? 0,
     profile.state,
   )
 

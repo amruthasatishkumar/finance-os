@@ -52,7 +52,7 @@ model FinancialAssumptions {
   stateTaxRate            Float   @default(0.093)     // CA default 9.3%
   effectiveFederalRate    Float   @default(0.22)      // estimated
   filingStatus            String  @default("single")
-  preTaxDeductions        Float   @default(23500)     // annual pre-tax: 401k + HSA + FSA etc. Reduces federal/state taxable income
+  preTaxDeductions        Float   @default(0)         // annual pre-tax deductions: 401k traditional + HSA + FSA. Reduces federal/state taxable income. Set to 0 to use pure IRS bracket estimation.
 
   // Emergency fund
   emergencyFundMonths     Int     @default(12)        // 12 for H1B (vs 6 standard)

@@ -86,7 +86,7 @@ export function calcAnnualNetIncome(
   grossAnnualIncome: number,
   filingStatus: string = 'single',
   stateTaxRate: number = 0.093,
-  preTaxDeductions: number = 23500,  // default: max 401k contribution
+  preTaxDeductions: number = 0,
   state: string = 'California',
 ): {
   gross: number
@@ -137,7 +137,7 @@ export function calcMonthlyNetIncome(
   sources: IncomeSourceRaw[],
   filingStatus: string = 'single',
   stateTaxRate: number = 0.093,
-  preTaxDeductions: number = 23500,
+  preTaxDeductions: number = 0,
   state: string = 'California',
 ): number {
   const grossAnnual = calcMonthlyGrossIncome(sources) * 12
