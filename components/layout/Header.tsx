@@ -20,7 +20,6 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/h1b': { title: 'H1B Command Center', subtitle: 'Visa, green card & cross-border planning' },
   '/assistant': { title: 'AI Assistant', subtitle: 'Your personal CFO' },
   '/reports': { title: 'Reports & Insights', subtitle: 'Monthly and annual analysis' },
-  '/notes': { title: 'Notes & Reflections', subtitle: 'Your money journal' },
   '/vault': { title: 'Document Vault', subtitle: 'Important documents index' },
   '/settings': { title: 'Settings', subtitle: 'Preferences and assumptions' },
 }

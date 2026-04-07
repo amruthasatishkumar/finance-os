@@ -15,7 +15,6 @@ import {
   Zap,
   Map,
   Bot,
-  BookOpen,
   Settings,
   ChevronLeft,
   DollarSign,
@@ -58,12 +57,6 @@ const navItems = [
     group: 'Intelligence',
     items: [
       { href: '/assistant', label: 'AI Assistant', icon: Bot },
-    ],
-  },
-  {
-    group: 'Personal',
-    items: [
-      { href: '/notes', label: 'Notes & Reflections', icon: BookOpen },
     ],
   },
   {
