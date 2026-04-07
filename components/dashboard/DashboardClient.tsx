@@ -1,17 +1,19 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useState } from 'react'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { ProgressRing, ProgressBar } from '@/components/shared/ProgressRing'
 import { AlertBanner, Badge, CurrencyDisplay, InfoTooltip } from '@/components/shared'
 import { FinanceAreaChart, DonutChart } from '@/components/charts'
 import {
   TrendingUp, TrendingDown, Shield, Target, AlertTriangle,
-  Clock, ArrowRight, Calendar, Zap, ChevronRight
+  Clock, ArrowRight, Calendar, Zap, ChevronRight, Pencil, Check, X
 } from 'lucide-react'
 import Link from 'next/link'
 import { formatCurrency, formatPercent, daysUntil, getScoreColor, getScoreLabel } from '@/lib/utils'
 import { H1B_CONSTANTS } from '@/lib/constants'
+import { updateEmergencyFundMonths } from '@/actions/profile'
 import type { getFinancialSummary, getSnapshotHistory } from '@/actions/finance'
 
 type Summary = NonNullable<Awaited<ReturnType<typeof getFinancialSummary>>>
@@ -23,6 +25,19 @@ interface DashboardClientProps {
 }
 
 export function DashboardClient({ summary, history }: DashboardClientProps) {
+  const [efEditing, setEfEditing] = useState(false)
+  const [efMonthsInput, setEfMonthsInput] = useState(String(summary.assumptions?.emergencyFundMonths ?? 12))
+  const [efSaving, setEfSaving] = useState(false)
+
+  async function saveEfMonths() {
+    const val = parseInt(efMonthsInput)
+    if (!val || val < 1 || val > 36) return
+    setEfSaving(true)
+    await updateEmergencyFundMonths(val)
+    setEfEditing(false)
+    setEfSaving(false)
+  }
+
   const {
     profile, visaInfo, netWorth, grossMonthly, netMonthly, totalExpenses,
     freeCashFlow, savingsRate, healthScore, healthBreakdown,
@@ -219,10 +234,43 @@ export function DashboardClient({ summary, history }: DashboardClientProps) {
               </div>
               <div className="flex items-baseline gap-1 mt-1">
                 <span className="text-2xl font-bold text-[#F8FAFC] tabular-nums">{efCoverage.toFixed(1)}</span>
-                <span className="text-sm text-[#64748B]">/ {summary.assumptions?.emergencyFundMonths ?? 12} months</span>
+                <span className="text-sm text-[#64748B]">
+                  /{' '}
+                  {efEditing ? (
+                    <span className="inline-flex items-center gap-1">
+                      <input
+                        type="number"
+                        min={1}
+                        max={36}
+                        value={efMonthsInput}
+                        onChange={(e) => setEfMonthsInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') saveEfMonths(); if (e.key === 'Escape') setEfEditing(false) }}
+                        autoFocus
+                        className="w-12 bg-[#1E293B] border border-indigo-500 rounded-lg px-1.5 py-0.5 text-white text-sm text-center focus:outline-none"
+                      />
+                      <button onClick={saveEfMonths} disabled={efSaving} className="p-0.5 hover:text-emerald-400 text-[#94A3B8] transition-colors">
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => setEfEditing(false)} className="p-0.5 hover:text-red-400 text-[#94A3B8] transition-colors">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1">
+                      {summary.assumptions?.emergencyFundMonths ?? 12} months
+                      <button
+                        onClick={() => { setEfMonthsInput(String(summary.assumptions?.emergencyFundMonths ?? 12)); setEfEditing(true) }}
+                        className="p-0.5 hover:text-[#94A3B8] text-[#475569] transition-colors"
+                        title="Change target months"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                </span>
               </div>
             </div>
-            <Shield className={`w-5 h-5 ${efCoverage >= 12 ? 'text-emerald-400' : efCoverage >= 6 ? 'text-amber-400' : 'text-red-400'}`} />
+            <Shield className={`w-5 h-5 ${efCoverage >= (summary.assumptions?.emergencyFundMonths ?? 12) ? 'text-emerald-400' : efCoverage >= 6 ? 'text-amber-400' : 'text-red-400'}`} />
           </div>
           <ProgressBar
             value={(efCoverage / (summary.assumptions?.emergencyFundMonths ?? 12)) * 100}

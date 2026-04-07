@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Edit2, Trash2, X, Target, CheckCircle, PauseCircle } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Target, CheckCircle, PauseCircle, Pencil, Check } from 'lucide-react'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { ProgressRing } from '@/components/shared/ProgressRing'
 import { SectionHeader } from '@/components/shared/index'
 import { formatCurrency, monthsUntil } from '@/lib/utils'
 import { createGoal, updateGoal, deleteGoal, addGoalContribution } from '@/actions/goals'
+import { updateEmergencyFundMonths } from '@/actions/profile'
 import type { Goal, GoalMilestone } from '@/generated/prisma/client'
 
 type GoalWithMilestones = Goal & { milestones: GoalMilestone[] }
@@ -51,6 +52,8 @@ interface Props {
   freeCashFlow: number
   returnRate: number
   inflationRate: number
+  efMonths: number
+  totalExpenses: number
 }
 
 const GOAL_PALETTE = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899', '#84CC16']
@@ -60,13 +63,67 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
   completed: <CheckCircle className="w-4 h-4 text-emerald-400" />,
 }
 
-export function GoalsClient({ goals, freeCashFlow, returnRate, inflationRate }: Props) {
+export function GoalsClient({ goals, freeCashFlow, returnRate, inflationRate, efMonths, totalExpenses }: Props) {
   const [items, setItems] = useState(goals)
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [contribGoalId, setContribGoalId] = useState<string | null>(null)
   const [contribAmount, setContribAmount] = useState('')
   const [loading, setLoading] = useState(false)
+  const [efMonthsVal, setEfMonthsVal] = useState(efMonths)
+  const [efEditing, setEfEditing] = useState(false)
+  const [efInput, setEfInput] = useState(String(efMonths))
+  const [efSaving, setEfSaving] = useState(false)
+  const [selectedType, setSelectedType] = useState('custom')
+  const [efCurrentSaved, setEfCurrentSaved] = useState('')
+  const [efMonthsForm, setEfMonthsForm] = useState(String(efMonths))
+
+  const efComputedTarget = Math.round((parseInt(efMonthsForm) || efMonthsVal) * totalExpenses)
+
+  async function saveEfMonths() {
+    const val = parseInt(efInput)
+    if (!val || val < 1 || val > 36) return
+    setEfSaving(true)
+    await updateEmergencyFundMonths(val)
+    setEfMonthsVal(val)
+    setEfEditing(false)
+    setEfSaving(false)
+  }
+
+  async function handleEfSubmit() {
+    const months = Math.min(36, Math.max(1, parseInt(efMonthsForm) || efMonthsVal))
+    const current = parseFloat(efCurrentSaved) || 0
+    const target = Math.round(months * totalExpenses)
+    setLoading(true)
+    try {
+      await updateEmergencyFundMonths(months)
+      setEfMonthsVal(months)
+      const payload = {
+        name: `Emergency Fund (${months} months)`,
+        type: 'emergency_fund',
+        targetAmount: target,
+        currentAmount: current,
+        monthlyContrib: 0,
+        priority: 10,
+        isInflationAdjusted: false,
+        icon: '🛡️',
+        color: '#10B981',
+      }
+      if (editId) {
+        const updated = await updateGoal(editId, payload)
+        setItems((prev) => prev.map((g) => (g.id === editId ? { ...g, ...updated } : g)))
+      } else {
+        const created = await createGoal(payload)
+        setItems((prev) => [...prev, { ...created, milestones: [] }])
+      }
+      setShowForm(false)
+      setEditId(null)
+      setEfCurrentSaved('')
+      setEfMonthsForm(String(months))
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -98,6 +155,13 @@ export function GoalsClient({ goals, freeCashFlow, returnRate, inflationRate }: 
 
   function startEdit(goal: GoalWithMilestones) {
     setEditId(goal.id)
+    setSelectedType(goal.type)
+    if (goal.type === 'emergency_fund') {
+      setEfCurrentSaved(String(goal.currentAmount))
+      setEfMonthsForm(String(efMonthsVal))
+      setShowForm(true)
+      return
+    }
     setValue('name', goal.name)
     setValue('type', goal.type)
     setValue('targetAmount', goal.targetAmount)
@@ -142,7 +206,7 @@ export function GoalsClient({ goals, freeCashFlow, returnRate, inflationRate }: 
             title="Goals"
             subtitle="Your financial milestones"
             action={
-              <button onClick={() => { setShowForm(true); setEditId(null); reset() }} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded-xl transition-colors font-medium">
+              <button onClick={() => { setShowForm(true); setEditId(null); reset(); setSelectedType('custom'); setEfCurrentSaved(''); setEfMonthsForm(String(efMonthsVal)) }} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded-xl transition-colors font-medium">
                 <Plus className="w-4 h-4" />New Goal
               </button>
             }
@@ -152,8 +216,10 @@ export function GoalsClient({ goals, freeCashFlow, returnRate, inflationRate }: 
         <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
           {items.length === 0 && <div className="card col-span-2 text-center py-12 text-slate-500">No goals yet. Create your first financial goal.</div>}
           {items.map((goal) => {
-            const progress = goal.targetAmount > 0 ? Math.min(100, (goal.currentAmount / goal.targetAmount) * 100) : 0
-            const remaining = goal.targetAmount - goal.currentAmount
+            const isEF = goal.type === 'emergency_fund'
+            const liveTarget = isEF ? Math.round(efMonthsVal * totalExpenses) : goal.targetAmount
+            const progress = liveTarget > 0 ? Math.min(100, (goal.currentAmount / liveTarget) * 100) : 0
+            const remaining = liveTarget - goal.currentAmount
             const monthsLeft = goal.targetDate ? monthsUntil(new Date(goal.targetDate)) : null
             const color = goal.color ?? GOAL_PALETTE[0]
             return (
@@ -172,6 +238,41 @@ export function GoalsClient({ goals, freeCashFlow, returnRate, inflationRate }: 
                             {Math.round(goal.confidenceScore)}% conf
                           </span>
                         )}
+                        {/* Inline month editor for emergency fund goals */}
+                        {goal.type === 'emergency_fund' && (
+                          <span className="flex items-center gap-1">
+                            {efEditing ? (
+                              <>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={36}
+                                  value={efInput}
+                                  onChange={(e) => setEfInput(e.target.value)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') saveEfMonths(); if (e.key === 'Escape') setEfEditing(false) }}
+                                  autoFocus
+                                  className="w-12 bg-[#1E293B] border border-indigo-500 rounded-lg px-1.5 py-0.5 text-white text-xs text-center focus:outline-none"
+                                />
+                                <span className="text-xs text-[#64748B]">mo</span>
+                                <button onClick={saveEfMonths} disabled={efSaving} className="p-0.5 hover:text-emerald-400 text-[#94A3B8]">
+                                  <Check className="w-3 h-3" />
+                                </button>
+                                <button onClick={() => setEfEditing(false)} className="p-0.5 hover:text-red-400 text-[#94A3B8]">
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => { setEfInput(String(efMonthsVal)); setEfEditing(true) }}
+                                className="flex items-center gap-0.5 text-xs text-[#475569] hover:text-[#94A3B8] transition-colors"
+                                title="Change target months"
+                              >
+                                <Pencil className="w-2.5 h-2.5" />
+                                {efMonthsVal}mo target
+                              </button>
+                            )}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -182,7 +283,7 @@ export function GoalsClient({ goals, freeCashFlow, returnRate, inflationRate }: 
                 <div className="space-y-2 mb-5">
                   <div className="flex justify-between text-sm">
                     <span className="text-[#94A3B8]">Progress</span>
-                    <span className="text-white font-medium">{formatCurrency(goal.currentAmount)} / {formatCurrency(goal.targetAmount)}</span>
+                    <span className="text-white font-medium">{formatCurrency(goal.currentAmount)} / {formatCurrency(liveTarget)}</span>
                   </div>
                   <div className="h-2.5 bg-[#334155] rounded-full overflow-hidden">
                     <motion.div
@@ -247,7 +348,69 @@ export function GoalsClient({ goals, freeCashFlow, returnRate, inflationRate }: 
                   <h2 className="text-lg font-semibold text-white">{editId ? 'Edit Goal' : 'New Goal'}</h2>
                   <button onClick={() => { setShowForm(false); setEditId(null) }} className="p-2 hover:bg-[#1E293B] rounded-xl"><X className="w-5 h-5 text-[#64748B]" /></button>
                 </div>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+
+                {/* Type selector — always shown */}
+                <div className="mb-4">
+                  <label className="text-xs text-[#94A3B8] mb-1.5 block font-medium">Type</label>
+                  <select
+                    value={selectedType}
+                    onChange={(e) => {
+                      setSelectedType(e.target.value)
+                      setValue('type', e.target.value)
+                    }}
+                    className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-indigo-500 text-sm"
+                  >
+                    {GOAL_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
+
+                {selectedType === 'emergency_fund' ? (
+                  /* ── Simplified EF form ── */
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs text-[#94A3B8] mb-1.5 block font-medium">Target Coverage (months)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={36}
+                        value={efMonthsForm}
+                        onChange={(e) => setEfMonthsForm(e.target.value)}
+                        className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-indigo-500 text-sm"
+                        placeholder="e.g. 6"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-[#94A3B8] mb-1.5 block font-medium">Current Saved ($)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        step={100}
+                        value={efCurrentSaved}
+                        onChange={(e) => setEfCurrentSaved(e.target.value)}
+                        className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-indigo-500 text-sm"
+                        placeholder="0"
+                      />
+                    </div>
+                    {/* Live computed target */}
+                    <div className="bg-[#0B1120] border border-[#1E293B] rounded-xl p-3 space-y-1.5">
+                      <p className="text-xs text-[#64748B] font-medium uppercase tracking-wide">Auto-calculated target</p>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-[#94A3B8]">{efMonthsForm || efMonthsVal} months × {formatCurrency(totalExpenses)}/mo expenses</span>
+                      </div>
+                      <p className="text-lg font-bold text-emerald-400">{formatCurrency(efComputedTarget)}</p>
+                      <p className="text-xs text-[#475569]">Updates automatically when your expenses change</p>
+                    </div>
+                    <button
+                      onClick={handleEfSubmit}
+                      disabled={loading}
+                      className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+                    >
+                      {loading ? 'Saving...' : editId ? 'Update Emergency Fund' : 'Set Emergency Fund Goal'}
+                    </button>
+                  </div>
+                ) : (
+                  /* ── Standard goal form ── */
+                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                   <div>
                     <label className="text-xs text-[#94A3B8] mb-1.5 block font-medium">Goal Name *</label>
                     <input {...register('name')} className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-indigo-500 text-sm placeholder:text-[#475569]" placeholder="e.g. Green Card Legal Fund" />
@@ -288,10 +451,11 @@ export function GoalsClient({ goals, freeCashFlow, returnRate, inflationRate }: 
                     <label className="text-xs text-[#94A3B8] mb-1.5 block font-medium">Priority (1-10)</label>
                     <input {...register('priority')} type="number" min="1" max="10" className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-indigo-500 text-sm" />
                   </div>
-                  <button type="submit" disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors text-sm">
+                    <button type="submit" disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors text-sm">
                     {loading ? 'Saving...' : editId ? 'Update Goal' : 'Create Goal'}
                   </button>
-                </form>
+                  </form>
+                )}
               </div>
             </motion.div>
           </>

@@ -63,8 +63,14 @@ export function AssistantClient({ initialContext }: Props) {
       })
 
       if (!response.ok) {
-        const errorText = await response.text()
-        setMessages([...newMessages, { role: 'assistant', content: `Error: ${errorText}` }])
+        let errorMsg = `Request failed (${response.status})`
+        try {
+          const errJson = await response.json()
+          errorMsg = errJson.error ?? errorMsg
+        } catch {
+          errorMsg = await response.text().catch(() => errorMsg)
+        }
+        setMessages([...newMessages, { role: 'assistant', content: `⚠️ ${errorMsg}` }])
         return
       }
 

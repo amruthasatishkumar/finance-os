@@ -35,6 +35,7 @@ const assumptionsSchema = z.object({
   includeSocialSecurity: z.boolean(),
   safeWithdrawalRate: z.coerce.number().min(0.02).max(0.08),
   usdToInrRate: z.coerce.number().min(50).max(200),
+  preTaxDeductions: z.coerce.number().min(0).max(100000).default(0),
 })
 
 interface Props {
@@ -208,7 +209,7 @@ export function SettingsClient({ profile, assumptions }: Props) {
             ))}
             <div className="col-span-2">
               <label className={labelClass}>Annual Pre-tax Deductions ($) — Optional</label>
-              <input {...assumptionsForm.register('preTaxDeductions' as any)} type="number" step="500" className={inputClass} />
+              <input {...assumptionsForm.register('preTaxDeductions' as any)} type="number" step="1" min="0" className={inputClass} />
               <p className="text-xs text-[#64748B] mt-1">
                 Leave at 0 for a pure IRS bracket estimate. Enter your 401k traditional + HSA contributions here only if you want to see the exact take-home after those come out. Your paycheck already reflects this. Example: $3,600/yr if you contribute $150/paycheck × 24.
               </p>

@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Edit2, Trash2, TrendingUp, DollarSign, Briefcase, X } from 'lucide-react'
+import { Plus, Edit2, Trash2, TrendingUp, DollarSign, Briefcase, X, ShieldCheck } from 'lucide-react'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { SectionHeader } from '@/components/shared/index'
 import { formatCurrency, formatPercent, normalizeToMonthly } from '@/lib/utils'
 import { createIncomeSource, updateIncomeSource, deleteIncomeSource } from '@/actions/income'
-import type { IncomeSource } from '@/generated/prisma/client'
+import { createPreTaxDeduction, updatePreTaxDeduction, deletePreTaxDeduction } from '@/actions/pretax'
+import type { IncomeSource, PreTaxDeduction } from '@/generated/prisma/client'
 
 const INCOME_TYPES = [
   { value: 'salary', label: 'Salary' },
@@ -31,6 +32,20 @@ const FREQUENCIES = [
   { value: 'one_time', label: 'One-time' },
 ]
 
+const PRETAX_TYPES = [
+  { value: '401k_traditional', label: '401k (Traditional)', icon: '🏦' },
+  { value: '401k_roth', label: '401k (Roth)', icon: '📈' },
+  { value: 'health_insurance', label: 'Health Insurance', icon: '🏥' },
+  { value: 'hsa', label: 'HSA', icon: '💊' },
+  { value: 'fsa_healthcare', label: 'FSA (Healthcare)', icon: '🩺' },
+  { value: 'fsa_dependent', label: 'FSA (Dependent Care)', icon: '👶' },
+  { value: 'dental_vision', label: 'Dental / Vision', icon: '👁️' },
+  { value: 'life_insurance', label: 'Life Insurance', icon: '🛡️' },
+  { value: 'other', label: 'Other', icon: '📋' },
+]
+
+const pretaxTypeMap = Object.fromEntries(PRETAX_TYPES.map((t) => [t.value, t]))
+
 const schema = z.object({
   name: z.string().min(1, 'Name required'),
   type: z.string().min(1),
@@ -41,10 +56,19 @@ const schema = z.object({
   notes: z.string().optional(),
 })
 
+const pretaxSchema = z.object({
+  name: z.string().min(1, 'Name required'),
+  type: z.string().min(1),
+  monthlyAmount: z.coerce.number().min(0, 'Amount must be non-negative'),
+  notes: z.string().optional(),
+})
+
 type FormData = z.infer<typeof schema>
+type PretaxFormData = z.infer<typeof pretaxSchema>
 
 interface Props {
   incomeSources: IncomeSource[]
+  preTaxItems: PreTaxDeduction[]
   grossMonthly: number
   netMonthly: number
   stateTaxRate: number
@@ -64,15 +88,26 @@ interface Props {
   } | null
 }
 
-export function IncomeClient({ incomeSources, grossMonthly, netMonthly, stateTaxRate, filingStatus, preTaxDeductions, state, taxBreakdown }: Props) {
+export function IncomeClient({ incomeSources, preTaxItems: initialPretaxItems, grossMonthly, netMonthly, stateTaxRate, filingStatus, preTaxDeductions, state, taxBreakdown }: Props) {
   const [sources, setSources] = useState(incomeSources)
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
+  // Pre-tax deductions state
+  const [pretaxItems, setPretaxItems] = useState<PreTaxDeduction[]>(initialPretaxItems)
+  const [showPretaxForm, setShowPretaxForm] = useState(false)
+  const [pretaxEditId, setPretaxEditId] = useState<string | null>(null)
+  const [pretaxLoading, setPretaxLoading] = useState(false)
+
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { frequency: 'monthly', taxable: true, growthRate: 0.05 },
+  })
+
+  const { register: registerPt, handleSubmit: handleSubmitPt, reset: resetPt, setValue: setValuePt, formState: { errors: errorsPt } } = useForm<PretaxFormData>({
+    resolver: zodResolver(pretaxSchema),
+    defaultValues: { type: '401k_traditional', monthlyAmount: 0 },
   })
 
   const effectiveTaxRate = grossMonthly > 0 ? (grossMonthly - netMonthly) / grossMonthly : 0
@@ -112,6 +147,38 @@ export function IncomeClient({ incomeSources, grossMonthly, netMonthly, stateTax
   async function handleDelete(id: string) {
     await deleteIncomeSource(id)
     setSources((prev) => prev.filter((s) => s.id !== id))
+  }
+
+  async function onPretaxSubmit(data: PretaxFormData) {
+    setPretaxLoading(true)
+    try {
+      if (pretaxEditId) {
+        const updated = await updatePreTaxDeduction(pretaxEditId, data)
+        setPretaxItems((prev) => prev.map((d) => (d.id === pretaxEditId ? { ...d, ...updated } : d)))
+      } else {
+        const created = await createPreTaxDeduction(data)
+        setPretaxItems((prev) => [...prev, created])
+      }
+      resetPt()
+      setShowPretaxForm(false)
+      setPretaxEditId(null)
+    } finally {
+      setPretaxLoading(false)
+    }
+  }
+
+  function startEditPretax(item: PreTaxDeduction) {
+    setPretaxEditId(item.id)
+    setValuePt('name', item.name)
+    setValuePt('type', item.type)
+    setValuePt('monthlyAmount', item.monthlyAmount)
+    setValuePt('notes', item.notes ?? '')
+    setShowPretaxForm(true)
+  }
+
+  async function handleDeletePretax(id: string) {
+    await deletePreTaxDeduction(id)
+    setPretaxItems((prev) => prev.filter((d) => d.id !== id))
   }
 
   const typeIcons: Record<string, string> = {
@@ -277,7 +344,7 @@ export function IncomeClient({ incomeSources, grossMonthly, netMonthly, stateTax
         </div>
       </div>
 
-      {/* Add / Edit Drawer */}
+      {/* Add / Edit Drawer — Income Sources */}
       <AnimatePresence>
         {showForm && (
           <>
@@ -351,6 +418,170 @@ export function IncomeClient({ incomeSources, grossMonthly, netMonthly, stateTax
                     className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
                   >
                     {loading ? 'Saving...' : editId ? 'Update Source' : 'Add Source'}
+                  </button>
+                </form>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Pre-Tax Contributions Section */}
+      <div>
+        <div className="mb-4">
+          <SectionHeader
+            title="Pre-Tax Contributions"
+            subtitle="401k, health insurance, HSA/FSA — reduces your taxable income"
+            action={
+              <button
+                onClick={() => { setShowPretaxForm(true); setPretaxEditId(null); resetPt() }}
+                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white text-sm px-4 py-2 rounded-xl transition-colors font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                Add Deduction
+              </button>
+            }
+          />
+        </div>
+
+        {pretaxItems.length > 0 && (
+          <div className="mb-4 flex items-center justify-between px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-amber-400" />
+              <span className="text-sm text-[#94A3B8]">Total monthly pre-tax deductions</span>
+            </div>
+            <div className="text-right">
+              <span className="text-sm font-semibold text-amber-400 tabular-nums">
+                {formatCurrency(pretaxItems.reduce((s, d) => s + d.monthlyAmount, 0))}/mo
+              </span>
+              <span className="text-xs text-[#64748B] ml-2 tabular-nums">
+                ({formatCurrency(pretaxItems.reduce((s, d) => s + d.monthlyAmount * 12, 0))}/yr)
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div className="grid gap-3">
+          {pretaxItems.length === 0 && (
+            <div className="card text-center py-10 text-slate-500 text-sm">
+              No pre-tax deductions added yet. Add your 401k, health insurance, HSA, etc.
+            </div>
+          )}
+          {pretaxItems.map((item) => {
+            const meta = pretaxTypeMap[item.type] ?? { icon: '📋', label: item.type }
+            return (
+              <motion.div
+                key={item.id}
+                layout
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="card p-5 flex items-center justify-between gap-4"
+              >
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0 text-xl">
+                    {meta.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[#F8FAFC]">{item.name}</p>
+                    <p className="text-xs text-[#64748B] mt-0.5">{meta.label}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="text-right mr-2">
+                    <p className="font-semibold text-amber-400 tabular-nums">{formatCurrency(item.monthlyAmount)}/mo</p>
+                    <p className="text-xs text-[#64748B] tabular-nums">{formatCurrency(item.monthlyAmount * 12)}/yr</p>
+                  </div>
+                  <button onClick={() => startEditPretax(item)} className="p-1.5 hover:bg-[#334155] rounded-lg transition-colors">
+                    <Edit2 className="w-3.5 h-3.5 text-[#64748B]" />
+                  </button>
+                  <button onClick={() => handleDeletePretax(item.id)} className="p-1.5 hover:bg-red-900/30 rounded-lg transition-colors">
+                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                  </button>
+                </div>
+              </motion.div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Add / Edit Drawer — Pre-Tax Deductions */}
+      <AnimatePresence>
+        {showPretaxForm && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-40"
+              onClick={() => { setShowPretaxForm(false); setPretaxEditId(null) }}
+            />
+            <motion.div
+              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 h-full w-full max-w-md bg-[#0B1120] border-l border-[#1E293B] z-50 overflow-y-auto"
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-white">
+                    {pretaxEditId ? 'Edit Deduction' : 'Add Pre-Tax Deduction'}
+                  </h2>
+                  <button onClick={() => { setShowPretaxForm(false); setPretaxEditId(null) }} className="p-2 hover:bg-[#1E293B] rounded-xl">
+                    <X className="w-5 h-5 text-[#64748B]" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmitPt(onPretaxSubmit)} className="space-y-4">
+                  <div>
+                    <label className="text-xs text-[#94A3B8] mb-1.5 block font-medium">Name *</label>
+                    <input
+                      {...registerPt('name')}
+                      className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-amber-500 text-sm placeholder:text-[#475569]"
+                      placeholder="e.g. 401k — Microsoft, BCBS Health"
+                    />
+                    {errorsPt.name && <p className="text-red-400 text-xs mt-1">{errorsPt.name.message}</p>}
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-[#94A3B8] mb-1.5 block font-medium">Type</label>
+                    <select
+                      {...registerPt('type')}
+                      className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-amber-500 text-sm"
+                    >
+                      {PRETAX_TYPES.map((t) => (
+                        <option key={t.value} value={t.value}>{t.icon} {t.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-[#94A3B8] mb-1.5 block font-medium">Monthly Amount ($) *</label>
+                    <input
+                      {...registerPt('monthlyAmount')}
+                      type="number"
+                      step="1"
+                      min="0"
+                      className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-amber-500 text-sm"
+                      placeholder="1875"
+                    />
+                    {errorsPt.monthlyAmount && <p className="text-red-400 text-xs mt-1">{errorsPt.monthlyAmount.message}</p>}
+                    <p className="text-xs text-[#475569] mt-1">Enter the per-paycheck/monthly amount deducted</p>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-[#94A3B8] mb-1.5 block font-medium">Notes</label>
+                    <textarea
+                      {...registerPt('notes')}
+                      rows={2}
+                      className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-amber-500 text-sm placeholder:text-[#475569] resize-none"
+                      placeholder="Optional notes..."
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={pretaxLoading}
+                    className="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+                  >
+                    {pretaxLoading ? 'Saving...' : pretaxEditId ? 'Update Deduction' : 'Add Deduction'}
                   </button>
                 </form>
               </div>

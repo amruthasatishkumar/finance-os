@@ -55,6 +55,7 @@ export const ModelName = {
   FinancialAssumptions: 'FinancialAssumptions',
   VisaInfo: 'VisaInfo',
   IncomeSource: 'IncomeSource',
+  PreTaxDeduction: 'PreTaxDeduction',
   ExpenseCategory: 'ExpenseCategory',
   Expense: 'Expense',
   Asset: 'Asset',
@@ -180,6 +181,20 @@ export const IncomeSourceScalarFieldEnum = {
 } as const
 
 export type IncomeSourceScalarFieldEnum = (typeof IncomeSourceScalarFieldEnum)[keyof typeof IncomeSourceScalarFieldEnum]
+
+
+export const PreTaxDeductionScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  type: 'type',
+  monthlyAmount: 'monthlyAmount',
+  isActive: 'isActive',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PreTaxDeductionScalarFieldEnum = (typeof PreTaxDeductionScalarFieldEnum)[keyof typeof PreTaxDeductionScalarFieldEnum]
 
 
 export const ExpenseCategoryScalarFieldEnum = {

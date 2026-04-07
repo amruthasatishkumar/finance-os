@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Shield, AlertTriangle, Clock, Globe, TrendingUp, Plus, X, Trash2 } from 'lucide-react'
 import { MetricCard } from '@/components/shared/MetricCard'
+import { InfoTooltip } from '@/components/shared/InfoTooltip'
 import { SectionHeader, AlertBanner } from '@/components/shared/index'
 import { formatCurrency } from '@/lib/utils'
 import { daysUntil } from '@/lib/utils'
@@ -95,6 +96,7 @@ export function H1BClient({ visaInfo, remittances, foreignAssets, foreignTotal, 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           title="Visa Status"
+          tooltip="Your current U.S. work visa type and days remaining until expiry. H1B holders must renew or change status before this date to remain authorized to work."
           value={visaInfo?.visaType ?? 'H1B'}
           subtitle={visaDaysLeft !== null ? `${visaDaysLeft} days left` : 'No expiry set'}
           icon={<Shield className="w-5 h-5" />}
@@ -102,6 +104,7 @@ export function H1BClient({ visaInfo, remittances, foreignAssets, foreignTotal, 
         />
         <MetricCard
           title="GC Stage"
+          tooltip="Tracks your Green Card application stage through PERM → I-140 → I-485. For EB-2/EB-3 India category, the wait can be 10–20+ years due to per-country backlogs."
           value={gcStage.label.replace('🎉 ', '')}
           subtitle={`Step ${gcStage.step} of ${GC_STAGES.length - 1}`}
           icon={<Globe className="w-5 h-5" />}
@@ -109,6 +112,7 @@ export function H1BClient({ visaInfo, remittances, foreignAssets, foreignTotal, 
         />
         <MetricCard
           title="Foreign Accounts"
+          tooltip="Total balance across all your foreign bank/investment accounts in USD. If this exceeds $10,000 at any point during the calendar year, you must file an FBAR (FinCEN 114) with the IRS."
           value={formatCurrency(foreignTotal)}
           subtitle={`FBAR: ${fbarStatus}`}
           icon={<AlertTriangle className="w-5 h-5" />}
@@ -116,6 +120,7 @@ export function H1BClient({ visaInfo, remittances, foreignAssets, foreignTotal, 
         />
         <MetricCard
           title="Remitted YTD"
+          tooltip="Total amount you've sent abroad (e.g. to India) so far this calendar year, logged across all transfer services like Wise and Remitly."
           value={formatCurrency(totalRemittedYTD)}
           subtitle="To India this year"
           icon={<TrendingUp className="w-5 h-5" />}
@@ -128,6 +133,7 @@ export function H1BClient({ visaInfo, remittances, foreignAssets, foreignTotal, 
         <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
           <Clock className="w-5 h-5 text-indigo-400" />
           H1B Key Dates
+          <InfoTooltip text="Key dates to manage your H1B status. Visa Expiry: must renew before this date. Next Renewal: start the process 6–9 months ahead. Passport Expiry: must be valid for re-entry. Priority Date: your position in the Green Card backlog queue." />
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
@@ -149,7 +155,10 @@ export function H1BClient({ visaInfo, remittances, foreignAssets, foreignTotal, 
 
       {/* Green Card Pipeline */}
       <div className="card p-5">
-        <h3 className="font-semibold text-white mb-4">Green Card Pipeline</h3>
+        <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+          Green Card Pipeline
+          <InfoTooltip text="The 6-step path from H1B to Permanent Residency: PERM labor cert → I-140 petition → Priority date → I-485 adjustment of status → Green Card. Typical attorney + govt filing fees: $20,000–$30,000. India EB-2/EB-3 backlog can mean 10–20+ year waits." />
+        </h3>
         <div className="mb-4">
           <div className="flex justify-between text-xs text-[#94A3B8] mb-2">
             <span>Stage: {gcStage.label}</span>
@@ -189,7 +198,10 @@ export function H1BClient({ visaInfo, remittances, foreignAssets, foreignTotal, 
 
       {/* FBAR Meter */}
       <div className="card p-5">
-        <h3 className="font-semibold text-white mb-4">FBAR Threshold Monitor</h3>
+        <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+          FBAR Threshold Monitor
+          <InfoTooltip text="FBAR (FinCEN 114) must be filed if your foreign account balances exceeded $10,000 USD at any single point during the year. Deadline: April 15 (auto-extended to October 15). Willful failure to file can result in penalties of $10,000+ per violation." />
+        </h3>
         <p className="text-sm text-[#94A3B8] mb-3">
           FinCEN 114 required if aggregate foreign accounts exceed $10,000 USD at any point in the calendar year.
         </p>
@@ -229,6 +241,7 @@ export function H1BClient({ visaInfo, remittances, foreignAssets, foreignTotal, 
           <SectionHeader
             title="Remittance Log"
             subtitle="Money sent home"
+            tooltip="Track every transfer you send abroad. Logs the date, amount, currency, transfer service (Wise, Remitly, etc.), exchange rate used, and optional notes. Useful for tax records and monitoring total outflows."
             action={
               <button onClick={() => setShowRemittanceForm(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded-xl font-medium transition-colors">
                 <Plus className="w-4 h-4" />Log Remittance
@@ -236,30 +249,93 @@ export function H1BClient({ visaInfo, remittances, foreignAssets, foreignTotal, 
             }
           />
         </div>
-        <div className="mt-4 space-y-2">
-          {remittanceList.length === 0 && <p className="text-slate-500 text-sm text-center py-6">No remittance records yet.</p>}
-          {remittanceList.slice(0, 10).map((r) => (
-            <div key={r.id} className="flex items-center justify-between py-2.5 border-b border-[#1E293B] last:border-0 group">
-              <div>
-                <p className="text-sm text-[#F8FAFC]">{r.method} → {r.toCountry}</p>
-                <p className="text-xs text-[#475569]">{new Date(r.createdAt).toLocaleDateString()}</p>
-                {r.notes && <p className="text-xs text-[#64748B] mt-0.5">{r.notes}</p>}
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-[#F8FAFC]">{formatCurrency(r.amount, r.currency)}</p>
-                  {r.exchangeRate && <p className="text-xs text-[#475569]">@ {r.exchangeRate}</p>}
+        {/* YTD Summary Bar */}
+        {remittanceList.length > 0 && (() => {
+          const ytdEntries = remittanceList.filter((r) => new Date(r.createdAt).getFullYear() === new Date().getFullYear())
+          const ytdTotal = ytdEntries.reduce((s, r) => s + r.amount, 0)
+          const allTotal = remittanceList.reduce((s, r) => s + r.amount, 0)
+          // Group by method for stacked bar
+          const byMethod: Record<string, number> = {}
+          remittanceList.forEach((r) => { byMethod[r.method] = (byMethod[r.method] ?? 0) + r.amount })
+          const methodColors = ['bg-violet-500', 'bg-indigo-500', 'bg-cyan-500', 'bg-emerald-500', 'bg-amber-500']
+          const methods = Object.entries(byMethod).sort((a, b) => b[1] - a[1])
+          return (
+            <div className="mt-4 mb-5 bg-[#1E293B] rounded-2xl p-4">
+              <div className="flex justify-between items-end mb-3">
+                <div>
+                  <p className="text-xs text-[#64748B] font-medium uppercase tracking-wide">Total Transferred</p>
+                  <p className="text-2xl font-bold text-white mt-0.5">{formatCurrency(allTotal)}</p>
                 </div>
-                <button
-                  onClick={() => handleDeleteRemittance(r.id)}
-                  disabled={deletingId === r.id}
-                  className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-900/30 rounded-lg transition-all disabled:opacity-50"
-                >
-                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                </button>
+                <div className="text-right">
+                  <p className="text-xs text-[#64748B]">This year</p>
+                  <p className="text-base font-semibold text-violet-400">{formatCurrency(ytdTotal)}</p>
+                </div>
+              </div>
+              {/* Stacked bar */}
+              <div className="h-3 bg-[#0F172A] rounded-full overflow-hidden flex">
+                {methods.map(([method, amount], i) => (
+                  <motion.div
+                    key={method}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(amount / allTotal) * 100}%` }}
+                    transition={{ duration: 0.8, ease: 'easeOut', delay: i * 0.1 }}
+                    className={`h-full ${methodColors[i % methodColors.length]}`}
+                  />
+                ))}
+              </div>
+              {/* Legend */}
+              <div className="flex flex-wrap gap-3 mt-2.5">
+                {methods.map(([method, amount], i) => (
+                  <div key={method} className="flex items-center gap-1.5">
+                    <div className={`w-2 h-2 rounded-full ${methodColors[i % methodColors.length]}`} />
+                    <span className="text-xs text-[#94A3B8]">{method}</span>
+                    <span className="text-xs text-[#475569]">{formatCurrency(amount)}</span>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
+          )
+        })()}
+
+        <div className="space-y-2">
+          {remittanceList.length === 0 && <p className="text-slate-500 text-sm text-center py-6">No remittance records yet.</p>}
+          {remittanceList.slice(0, 10).map((r) => {
+            const rowTotal = remittanceList.reduce((s, x) => s + x.amount, 0)
+            const pct = rowTotal > 0 ? (r.amount / rowTotal) * 100 : 0
+            return (
+            <div key={r.id} className="py-2.5 border-b border-[#1E293B] last:border-0 group">
+              <div className="flex items-center justify-between mb-1.5">
+                <div>
+                  <p className="text-sm text-[#F8FAFC]">{r.method} → {r.toCountry}</p>
+                  <p className="text-xs text-[#475569]">{new Date(r.createdAt).toLocaleDateString()}</p>
+                  {r.notes && <p className="text-xs text-[#64748B] mt-0.5">{r.notes}</p>}
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-[#F8FAFC]">{formatCurrency(r.amount, r.currency)}</p>
+                    {r.exchangeRate && <p className="text-xs text-[#475569]">@ {r.exchangeRate}</p>}
+                  </div>
+                  <button
+                    onClick={() => handleDeleteRemittance(r.id)}
+                    disabled={deletingId === r.id}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-900/30 rounded-lg transition-all disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                  </button>
+                </div>
+              </div>
+              {/* Per-row proportional bar */}
+              <div className="h-1 bg-[#1E293B] rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ duration: 0.6, ease: 'easeOut' }}
+                  className="h-full bg-violet-500/60 rounded-full"
+                />
+              </div>
+            </div>
+            )
+          })}
         </div>
       </div>
 

@@ -52,7 +52,7 @@ export function Header({ pendingReminders }: HeaderProps) {
     setTimeout(() => {
       setShowReset(false)
       setResetDone(false)
-      router.push('/dashboard')
+      router.push('/onboarding')
       router.refresh()
     }, 1200)
   }
@@ -170,10 +170,10 @@ export function Header({ pendingReminders }: HeaderProps) {
               </button>
             </div>
             <p className="text-sm text-[#94A3B8] mb-4">
-              This will permanently delete all your income sources, expenses, debts, assets, investments, and goals. Your profile and settings will be kept.
+              This will permanently delete <strong className="text-white">everything</strong> — all income, expenses, debts, assets, investments, goals, remittance logs, visa info, profile, and settings.
             </p>
             <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-xs text-red-300 mb-5">
-              ⚠️ All financial data will be wiped. Run Setup again to re-enter your data.
+              ⚠️ Complete wipe. You will be redirected to onboarding to start fresh.
             </div>
             <div className="flex gap-3">
               <button

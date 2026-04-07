@@ -123,6 +123,22 @@ model IncomeSource {
 }
 
 // ─────────────────────────────────────────
+// PRE-TAX DEDUCTIONS
+// ─────────────────────────────────────────
+
+model PreTaxDeduction {
+  id            String   @id @default(cuid())
+  name          String   // e.g. "401k Traditional", "Health Insurance (BCBS)"
+  type          String   @default("other") // 401k_traditional | 401k_roth | health_insurance | hsa | fsa_healthcare | fsa_dependent | dental_vision | life_insurance | other
+  monthlyAmount Float    // monthly deduction amount
+  isActive      Boolean  @default(true)
+  notes         String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────
 // EXPENSES
 // ─────────────────────────────────────────
 

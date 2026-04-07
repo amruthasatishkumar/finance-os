@@ -53,6 +53,15 @@ export async function updateAssumptions(data: z.infer<typeof AssumptionsSchema>)
   return updated
 }
 
+export async function updateEmergencyFundMonths(months: number) {
+  const parsed = z.coerce.number().min(1).max(36).parse(months)
+  const assumptions = await prisma.financialAssumptions.findFirst()
+  if (!assumptions) throw new Error('No assumptions found')
+  await prisma.financialAssumptions.update({ where: { id: assumptions.id }, data: { emergencyFundMonths: parsed } })
+  revalidatePath('/dashboard')
+  revalidatePath('/settings')
+}
+
 export async function completeOnboarding() {
   const profile = await prisma.userProfile.findFirst()
   if (!profile) throw new Error('No profile found')

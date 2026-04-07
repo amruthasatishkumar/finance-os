@@ -1,20 +1,22 @@
 import { cn, formatCurrency } from '@/lib/utils'
 import { LucideIcon } from 'lucide-react'
 export { InfoTooltip } from './InfoTooltip'
+import { InfoTooltip } from './InfoTooltip'
 
 interface SectionHeaderProps {
   title: string
   subtitle?: string
+  tooltip?: string
   action?: React.ReactNode
   children?: React.ReactNode
   className?: string
 }
 
-export function SectionHeader({ title, subtitle, action, children, className }: SectionHeaderProps) {
+export function SectionHeader({ title, subtitle, tooltip, action, children, className }: SectionHeaderProps) {
   return (
     <div className={cn('flex items-center justify-between', className)}>
       <div>
-        <h2 className="text-lg font-semibold text-[#F8FAFC]">{title}</h2>
+        <h2 className="text-lg font-semibold text-[#F8FAFC] flex items-center gap-2">{title}{tooltip && <InfoTooltip text={tooltip} />}</h2>
         {subtitle && <p className="text-sm text-[#64748B] mt-0.5">{subtitle}</p>}
       </div>
       {(action || children) && (

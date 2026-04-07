@@ -20,43 +20,48 @@ Be concise, specific, and actionable. Use real numbers when given. Flag any H1B-
 export async function POST(req: NextRequest) {
   const { messages, context } = await req.json()
 
-  if (!process.env.GITHUB_TOKEN) {
-    return new Response('GITHUB_TOKEN not configured. Add it to .env.local', { status: 503 })
+  if (!process.env.GITHUB_TOKEN || process.env.GITHUB_TOKEN === 'your-github-pat-here') {
+    return new Response(JSON.stringify({ error: 'GITHUB_TOKEN not configured. Add a real GitHub PAT to .env.local' }), { status: 503, headers: { 'Content-Type': 'application/json' } })
   }
 
   const systemWithContext = context
     ? `${SYSTEM_PROMPT}\n\nCurrent financial context:\n${context}`
     : SYSTEM_PROMPT
 
-  const stream = await client.chat.completions.create({
-    model: 'openai/gpt-4o',
-    messages: [
-      { role: 'system', content: systemWithContext },
-      ...messages,
-    ],
-    stream: true,
-    max_tokens: 1024,
-    temperature: 0.3,
-  })
+  try {
+    const stream = await client.chat.completions.create({
+      model: 'openai/gpt-4o',
+      messages: [
+        { role: 'system', content: systemWithContext },
+        ...messages,
+      ],
+      stream: true,
+      max_tokens: 1024,
+      temperature: 0.3,
+    })
 
-  const encoder = new TextEncoder()
-  const readable = new ReadableStream({
-    async start(controller) {
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content
-        if (delta) {
-          controller.enqueue(encoder.encode(delta))
+    const encoder = new TextEncoder()
+    const readable = new ReadableStream({
+      async start(controller) {
+        for await (const chunk of stream) {
+          const delta = chunk.choices[0]?.delta?.content
+          if (delta) {
+            controller.enqueue(encoder.encode(delta))
+          }
         }
-      }
-      controller.close()
-    },
-  })
+        controller.close()
+      },
+    })
 
-  return new Response(readable, {
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-      'Transfer-Encoding': 'chunked',
-      'X-Content-Type-Options': 'nosniff',
-    },
-  })
+    return new Response(readable, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Transfer-Encoding': 'chunked',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    })
+  } catch (err: any) {
+    const message = err?.message ?? 'Unknown error from GitHub Models'
+    return new Response(JSON.stringify({ error: message }), { status: 500, headers: { 'Content-Type': 'application/json' } })
+  }
 }

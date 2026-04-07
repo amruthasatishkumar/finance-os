@@ -19,6 +19,8 @@ export default async function GoalsPage() {
       freeCashFlow={summary?.freeCashFlow ?? 0}
       returnRate={assumptions?.investmentReturnRate ?? 0.08}
       inflationRate={assumptions?.inflationRate ?? 0.035}
+      efMonths={assumptions?.emergencyFundMonths ?? 12}
+      totalExpenses={summary?.totalExpenses ?? 0}
     />
   )
 }

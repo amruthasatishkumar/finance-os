@@ -388,6 +388,7 @@ export const ModelName = {
   FinancialAssumptions: 'FinancialAssumptions',
   VisaInfo: 'VisaInfo',
   IncomeSource: 'IncomeSource',
+  PreTaxDeduction: 'PreTaxDeduction',
   ExpenseCategory: 'ExpenseCategory',
   Expense: 'Expense',
   Asset: 'Asset',
@@ -422,7 +423,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "userProfile" | "financialAssumptions" | "visaInfo" | "incomeSource" | "expenseCategory" | "expense" | "asset" | "liability" | "debtPayment" | "investment" | "investmentContribution" | "goal" | "goalMilestone" | "goalAllocation" | "financialSnapshot" | "simulation" | "aiSummary" | "note" | "reflection" | "lifeEvent" | "reminder" | "document" | "remittanceLog"
+    modelProps: "userProfile" | "financialAssumptions" | "visaInfo" | "incomeSource" | "preTaxDeduction" | "expenseCategory" | "expense" | "asset" | "liability" | "debtPayment" | "investment" | "investmentContribution" | "goal" | "goalMilestone" | "goalAllocation" | "financialSnapshot" | "simulation" | "aiSummary" | "note" | "reflection" | "lifeEvent" | "reminder" | "document" | "remittanceLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -719,6 +720,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.IncomeSourceCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.IncomeSourceCountAggregateOutputType> | number
+        }
+      }
+    }
+    PreTaxDeduction: {
+      payload: Prisma.$PreTaxDeductionPayload<ExtArgs>
+      fields: Prisma.PreTaxDeductionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PreTaxDeductionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PreTaxDeductionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PreTaxDeductionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PreTaxDeductionPayload>
+        }
+        findFirst: {
+          args: Prisma.PreTaxDeductionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PreTaxDeductionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PreTaxDeductionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PreTaxDeductionPayload>
+        }
+        findMany: {
+          args: Prisma.PreTaxDeductionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PreTaxDeductionPayload>[]
+        }
+        create: {
+          args: Prisma.PreTaxDeductionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PreTaxDeductionPayload>
+        }
+        createMany: {
+          args: Prisma.PreTaxDeductionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PreTaxDeductionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PreTaxDeductionPayload>[]
+        }
+        delete: {
+          args: Prisma.PreTaxDeductionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PreTaxDeductionPayload>
+        }
+        update: {
+          args: Prisma.PreTaxDeductionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PreTaxDeductionPayload>
+        }
+        deleteMany: {
+          args: Prisma.PreTaxDeductionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PreTaxDeductionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PreTaxDeductionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PreTaxDeductionPayload>[]
+        }
+        upsert: {
+          args: Prisma.PreTaxDeductionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PreTaxDeductionPayload>
+        }
+        aggregate: {
+          args: Prisma.PreTaxDeductionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePreTaxDeduction>
+        }
+        groupBy: {
+          args: Prisma.PreTaxDeductionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PreTaxDeductionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PreTaxDeductionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PreTaxDeductionCountAggregateOutputType> | number
         }
       }
     }
@@ -2257,6 +2332,20 @@ export const IncomeSourceScalarFieldEnum = {
 export type IncomeSourceScalarFieldEnum = (typeof IncomeSourceScalarFieldEnum)[keyof typeof IncomeSourceScalarFieldEnum]
 
 
+export const PreTaxDeductionScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  type: 'type',
+  monthlyAmount: 'monthlyAmount',
+  isActive: 'isActive',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PreTaxDeductionScalarFieldEnum = (typeof PreTaxDeductionScalarFieldEnum)[keyof typeof PreTaxDeductionScalarFieldEnum]
+
+
 export const ExpenseCategoryScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -2738,6 +2827,7 @@ export type GlobalOmitConfig = {
   financialAssumptions?: Prisma.FinancialAssumptionsOmit
   visaInfo?: Prisma.VisaInfoOmit
   incomeSource?: Prisma.IncomeSourceOmit
+  preTaxDeduction?: Prisma.PreTaxDeductionOmit
   expenseCategory?: Prisma.ExpenseCategoryOmit
   expense?: Prisma.ExpenseOmit
   asset?: Prisma.AssetOmit

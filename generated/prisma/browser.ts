@@ -38,6 +38,11 @@ export type VisaInfo = Prisma.VisaInfoModel
  */
 export type IncomeSource = Prisma.IncomeSourceModel
 /**
+ * Model PreTaxDeduction
+ * 
+ */
+export type PreTaxDeduction = Prisma.PreTaxDeductionModel
+/**
  * Model ExpenseCategory
  * 
  */
