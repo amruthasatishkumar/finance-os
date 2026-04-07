@@ -4,82 +4,80 @@ A personal finance dashboard built with Next.js, Prisma (SQLite), and Tailwind C
 
 ---
 
-## Prerequisites
+## First-time setup (Mac)
 
-Install these once on your Mac before anything else.
-
-### 1. Node.js (v20+)
+### 1. Install Node.js and pnpm
 
 ```bash
-# Install via Homebrew (recommended)
 brew install node
-```
-
-Verify: `node -v` should print `v20.x.x` or higher.
-
-### 2. pnpm
-
-```bash
 npm install -g pnpm
 ```
 
-Verify: `pnpm -v`
-
----
-
-## Getting the project
+### 2. Clone and open in VS Code
 
 ```bash
 git clone https://github.com/amruthasatishkumar/finance-os.git
 cd finance-os
+code .
 ```
 
----
+### 3. Install dependencies
 
-## Setup
-
-### 1. Install dependencies
+Open the VS Code Terminal (`Ctrl+`` ` or **Terminal → New Terminal**) and run:
 
 ```bash
 pnpm install
 ```
 
-### 2. Create the environment file
+### 4. Create the environment file
 
-Create a file called `.env.local` in the project root with this content:
+In the VS Code Terminal, run:
+
+```bash
+echo 'DATABASE_URL="file:./prisma/dev.db"' > .env.local
+```
+
+Or manually create a file called `.env.local` in the project root with:
 
 ```
 DATABASE_URL="file:./prisma/dev.db"
 ```
 
-### 3. Set up the database
-
-This creates the SQLite database file and seeds it with sample data:
+### 5. Set up the database
 
 ```bash
 pnpm db:push
 pnpm db:seed
 ```
 
----
-
-## Run the app
+### 6. Start the app
 
 ```bash
 pnpm dev
 ```
 
-Open [http://localhost:3004](http://localhost:3004) in your browser.
+Open **[http://localhost:3004](http://localhost:3004)** in your browser. Done.
+
+> The app is hardcoded to port **3004** — `pnpm dev` will always start it there.
 
 ---
 
-## Useful commands
+## Every time after that
+
+Just open the folder in VS Code and run:
+
+```bash
+pnpm dev
+```
+
+---
+
+## Other useful commands
 
 | Command | What it does |
 |---|---|
-| `pnpm dev` | Start dev server on port 3004 |
 | `pnpm build` | Build for production |
-| `pnpm start` | Run production build |
+| `pnpm start` | Run production build on port 3004 |
 | `pnpm db:push` | Apply schema changes to the database |
 | `pnpm db:seed` | Re-seed the database with sample data |
 | `pnpm db:studio` | Open Prisma Studio (visual DB browser) |
@@ -94,3 +92,4 @@ Open [http://localhost:3004](http://localhost:3004) in your browser.
 - **Framer Motion** — animations
 - **Recharts** — charts and graphs
 - **pnpm** — package manager
+
