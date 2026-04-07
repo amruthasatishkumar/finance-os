@@ -49,9 +49,22 @@ interface Props {
   netMonthly: number
   stateTaxRate: number
   filingStatus: string
+  preTaxDeductions: number
+  state: string
+  taxBreakdown: {
+    gross: number
+    preTaxDeductions: number
+    federalTax: number
+    stateTax: number
+    fica: number
+    totalTax: number
+    net: number
+    effectiveFederalRate: number
+    effectiveTotalRate: number
+  } | null
 }
 
-export function IncomeClient({ incomeSources, grossMonthly, netMonthly, stateTaxRate, filingStatus }: Props) {
+export function IncomeClient({ incomeSources, grossMonthly, netMonthly, stateTaxRate, filingStatus, preTaxDeductions, state, taxBreakdown }: Props) {
   const [sources, setSources] = useState(incomeSources)
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
@@ -134,11 +147,70 @@ export function IncomeClient({ incomeSources, grossMonthly, netMonthly, stateTax
         <MetricCard
           title="Tax Burden"
           value={formatPercent(effectiveTaxRate * 100)}
-          subtitle={`Federal + ${formatPercent(stateTaxRate * 100)} state + FICA`}
+          subtitle={`Federal + ${state} state + FICA`}
           icon={<TrendingUp className="w-5 h-5" />}
           color="amber"
         />
       </div>
+
+      {/* Tax Breakdown */}
+      {taxBreakdown && (
+        <div className="card p-5">
+          <h3 className="font-semibold text-[#F8FAFC] mb-1">Tax Breakdown</h3>
+          <p className="text-xs text-[#64748B] mb-4">
+            {state} · {filingStatus === 'married_jointly' ? 'Married Filing Jointly' : 'Single'} · {formatCurrency(preTaxDeductions, 'USD', false)} pre-tax deductions
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Waterfall */}
+            <div className="space-y-2.5">
+              {[
+                { label: 'Gross Annual',             value: taxBreakdown.gross,             color: 'text-[#F8FAFC]',   bg: 'bg-[#334155]',       sign: '' },
+                { label: '401k / Pre-tax Deductions',value: -taxBreakdown.preTaxDeductions, color: 'text-amber-400',   bg: 'bg-amber-500/10',     sign: '−' },
+                { label: 'Federal Income Tax',        value: -taxBreakdown.federalTax,       color: 'text-red-400',     bg: 'bg-red-500/10',       sign: '−' },
+                { label: `${state === 'California' || stateTaxRate === 0.093 ? 'CA State Tax + SDI' : 'State Tax'}`, value: -taxBreakdown.stateTax, color: 'text-orange-400', bg: 'bg-orange-500/10', sign: '−' },
+                { label: 'FICA (SS + Medicare)',      value: -taxBreakdown.fica,             color: 'text-yellow-400',  bg: 'bg-yellow-500/10',    sign: '−' },
+              ].map(({ label, value, color, bg, sign }) => (
+                <div key={label} className={`flex justify-between items-center px-3 py-2 rounded-xl ${bg}`}>
+                  <span className="text-sm text-[#94A3B8]">{label}</span>
+                  <span className={`text-sm font-semibold tabular-nums ${color}`}>
+                    {sign}{formatCurrency(Math.abs(value))}
+                  </span>
+                </div>
+              ))}
+              <div className="flex justify-between items-center px-3 py-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30">
+                <span className="text-sm font-semibold text-[#F8FAFC]">Annual Take-Home</span>
+                <span className="text-sm font-bold text-emerald-400 tabular-nums">{formatCurrency(taxBreakdown.net)}</span>
+              </div>
+            </div>
+
+            {/* Monthly summary */}
+            <div className="flex flex-col justify-center gap-3">
+              {[
+                { label: 'Monthly Gross',       value: taxBreakdown.gross / 12,             color: 'text-[#F8FAFC]' },
+                { label: 'Monthly 401k',        value: -(taxBreakdown.preTaxDeductions / 12), color: 'text-amber-400' },
+                { label: 'Monthly Taxes',       value: -(taxBreakdown.totalTax / 12),        color: 'text-red-400' },
+                { label: 'Monthly Take-Home',   value: taxBreakdown.net / 12,               color: 'text-emerald-400' },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="flex justify-between">
+                  <span className="text-sm text-[#94A3B8]">{label}</span>
+                  <span className={`text-sm font-semibold tabular-nums ${color}`}>
+                    {value < 0 ? '−' : ''}{formatCurrency(Math.abs(value))}
+                  </span>
+                </div>
+              ))}
+              <div className="mt-2 pt-3 border-t border-[#334155]">
+                <p className="text-xs text-[#64748B]">Effective total rate (incl. 401k)</p>
+                <p className="text-lg font-bold text-[#F8FAFC]">{(taxBreakdown.effectiveTotalRate * 100).toFixed(1)}%</p>
+                <p className="text-xs text-[#64748B] mt-0.5">
+                  Federal {(taxBreakdown.effectiveFederalRate * 100).toFixed(1)}% · 
+                  State {((taxBreakdown.stateTax / taxBreakdown.gross) * 100).toFixed(1)}% · 
+                  FICA {((taxBreakdown.fica / taxBreakdown.gross) * 100).toFixed(1)}%
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Income Sources */}
       <div>

@@ -2,26 +2,17 @@ import {
   FEDERAL_TAX_BRACKETS_2025_SINGLE,
   FEDERAL_TAX_BRACKETS_2025_MFJ,
   STANDARD_DEDUCTION_2025,
+  CA_STATE_TAX_BRACKETS_2025_SINGLE,
+  CA_STATE_TAX_BRACKETS_2025_MFJ,
+  CA_STANDARD_DEDUCTION_2025,
+  CA_SDI_RATE_2025,
   FICA_2025,
 } from '@/lib/constants'
 import { normalizeToMonthly } from '@/lib/utils'
 
-// ─── Federal income tax (2025 brackets) ───────────────────────────────────────
+// ─── Progressive bracket helper ───────────────────────────────────────────────
 
-export function calcFederalTax(
-  grossIncome: number,
-  filingStatus: string = 'single',
-): number {
-  const deduction =
-    STANDARD_DEDUCTION_2025[filingStatus as keyof typeof STANDARD_DEDUCTION_2025] ??
-    STANDARD_DEDUCTION_2025.single
-  const taxableIncome = Math.max(0, grossIncome - deduction)
-
-  const brackets =
-    filingStatus === 'married_jointly'
-      ? FEDERAL_TAX_BRACKETS_2025_MFJ
-      : FEDERAL_TAX_BRACKETS_2025_SINGLE
-
+function applyBrackets(taxableIncome: number, brackets: { min: number; max: number; rate: number }[]): number {
   let tax = 0
   for (const bracket of brackets) {
     if (taxableIncome <= bracket.min) break
@@ -31,24 +22,75 @@ export function calcFederalTax(
   return tax
 }
 
+// ─── Federal income tax (2025 brackets) ───────────────────────────────────────
+
+export function calcFederalTax(
+  grossIncome: number,
+  filingStatus: string = 'single',
+  preTaxDeductions: number = 0,   // 401k traditional + HSA + FSA (reduce W-2 taxable income)
+): number {
+  const deduction =
+    STANDARD_DEDUCTION_2025[filingStatus as keyof typeof STANDARD_DEDUCTION_2025] ??
+    STANDARD_DEDUCTION_2025.single
+  const taxableIncome = Math.max(0, grossIncome - preTaxDeductions - deduction)
+  const brackets =
+    filingStatus === 'married_jointly'
+      ? FEDERAL_TAX_BRACKETS_2025_MFJ
+      : FEDERAL_TAX_BRACKETS_2025_SINGLE
+  return applyBrackets(taxableIncome, brackets)
+}
+
 export function calcFICA(grossIncome: number): number {
   const { socialSecurityRate, socialSecurityCap, medicareRate, additionalMedicareRate, additionalMedicareThreshold } = FICA_2025
+  // Note: 401k traditional does NOT reduce FICA base — FICA is on gross wages
   const ss = Math.min(grossIncome, socialSecurityCap) * socialSecurityRate
   const medicare = grossIncome * medicareRate
   const additionalMedicare = Math.max(0, grossIncome - additionalMedicareThreshold) * additionalMedicareRate
   return ss + medicare + additionalMedicare
 }
 
-export function calcStateTax(grossIncome: number, stateTaxRate: number): number {
-  return grossIncome * stateTaxRate
+// ─── State tax ────────────────────────────────────────────────────────────────
+// California uses progressive brackets; all other states use a flat rate fallback.
+// preTaxDeductions reduce CA state taxable income too (CA conforms to federal pre-tax treatment
+// for 401k traditional, HSA — though CA does NOT allow HSA deduction; we include for simplicity).
+
+export function calcStateTax(
+  grossIncome: number,
+  stateTaxRate: number,
+  filingStatus: string = 'single',
+  preTaxDeductions: number = 0,
+  state: string = '',
+): number {
+  if (state === 'California' || stateTaxRate === 0.093) {
+    // Use CA progressive brackets
+    const caDeduction =
+      CA_STANDARD_DEDUCTION_2025[filingStatus as keyof typeof CA_STANDARD_DEDUCTION_2025] ??
+      CA_STANDARD_DEDUCTION_2025.single
+    const taxableIncome = Math.max(0, grossIncome - preTaxDeductions - caDeduction)
+    const brackets =
+      filingStatus === 'married_jointly'
+        ? CA_STATE_TAX_BRACKETS_2025_MFJ
+        : CA_STATE_TAX_BRACKETS_2025_SINGLE
+    const stateTax = applyBrackets(taxableIncome, brackets)
+    // CA SDI: 1.1% on ALL wages (no cap 2025), not reduced by pre-tax deductions
+    const sdi = grossIncome * CA_SDI_RATE_2025
+    return stateTax + sdi
+  }
+  // Flat rate for all other states
+  return Math.max(0, grossIncome - preTaxDeductions) * stateTaxRate
 }
+
+// ─── Full annual net income breakdown ─────────────────────────────────────────
 
 export function calcAnnualNetIncome(
   grossAnnualIncome: number,
   filingStatus: string = 'single',
   stateTaxRate: number = 0.093,
+  preTaxDeductions: number = 23500,  // default: max 401k contribution
+  state: string = 'California',
 ): {
   gross: number
+  preTaxDeductions: number
   federalTax: number
   stateTax: number
   fica: number
@@ -57,21 +99,23 @@ export function calcAnnualNetIncome(
   effectiveFederalRate: number
   effectiveTotalRate: number
 } {
-  const federal = calcFederalTax(grossAnnualIncome, filingStatus)
-  const state = calcStateTax(grossAnnualIncome, stateTaxRate)
+  const federal = calcFederalTax(grossAnnualIncome, filingStatus, preTaxDeductions)
+  const stateTaxAmt = calcStateTax(grossAnnualIncome, stateTaxRate, filingStatus, preTaxDeductions, state)
   const fica = calcFICA(grossAnnualIncome)
-  const total = federal + state + fica
-  const net = grossAnnualIncome - total
+  const totalTax = federal + stateTaxAmt + fica
+  // Net = gross - pre-tax deductions (go to 401k/HSA account, not pocket) - taxes
+  const net = grossAnnualIncome - preTaxDeductions - totalTax
 
   return {
     gross: grossAnnualIncome,
+    preTaxDeductions,
     federalTax: federal,
-    stateTax: state,
+    stateTax: stateTaxAmt,
     fica,
-    totalTax: total,
+    totalTax,
     net,
-    effectiveFederalRate: federal / grossAnnualIncome,
-    effectiveTotalRate: total / grossAnnualIncome,
+    effectiveFederalRate: grossAnnualIncome > 0 ? federal / grossAnnualIncome : 0,
+    effectiveTotalRate: grossAnnualIncome > 0 ? (totalTax + preTaxDeductions) / grossAnnualIncome : 0,
   }
 }
 
@@ -86,7 +130,6 @@ export interface IncomeSourceRaw {
 
 export function calcMonthlyGrossIncome(sources: IncomeSourceRaw[]): number {
   return sources
-    .filter((s) => s.taxable !== false)
     .reduce((sum, s) => sum + normalizeToMonthly(s.amount, s.frequency), 0)
 }
 
@@ -94,8 +137,10 @@ export function calcMonthlyNetIncome(
   sources: IncomeSourceRaw[],
   filingStatus: string = 'single',
   stateTaxRate: number = 0.093,
+  preTaxDeductions: number = 23500,
+  state: string = 'California',
 ): number {
   const grossAnnual = calcMonthlyGrossIncome(sources) * 12
-  const { net } = calcAnnualNetIncome(grossAnnual, filingStatus, stateTaxRate)
+  const { net } = calcAnnualNetIncome(grossAnnual, filingStatus, stateTaxRate, preTaxDeductions, state)
   return net / 12
 }

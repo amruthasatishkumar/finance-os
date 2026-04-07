@@ -1,6 +1,7 @@
 import { getFinancialSummary } from '@/actions/finance'
 import { prisma } from '@/lib/db'
 import { IncomeClient } from '@/components/income/IncomeClient'
+import { calcAnnualNetIncome } from '@/lib/calculations/income'
 
 export default async function IncomePage() {
   const [summary, incomeSources] = await Promise.all([
@@ -9,6 +10,19 @@ export default async function IncomePage() {
   ])
 
   const assumptions = summary?.assumptions
+  const profile = summary?.profile
+  const grossAnnual = (summary?.grossMonthly ?? 0) * 12
+  const preTaxDeductions = (assumptions as any)?.preTaxDeductions ?? 23500
+
+  const taxBreakdown = grossAnnual > 0
+    ? calcAnnualNetIncome(
+        grossAnnual,
+        assumptions?.filingStatus ?? 'single',
+        assumptions?.stateTaxRate ?? 0.093,
+        preTaxDeductions,
+        profile?.state ?? 'California',
+      )
+    : null
 
   return (
     <IncomeClient
@@ -17,6 +31,9 @@ export default async function IncomePage() {
       netMonthly={summary?.netMonthly ?? 0}
       stateTaxRate={assumptions?.stateTaxRate ?? 0.093}
       filingStatus={assumptions?.filingStatus ?? 'single'}
+      preTaxDeductions={preTaxDeductions}
+      state={profile?.state ?? 'California'}
+      taxBreakdown={taxBreakdown}
     />
   )
 }

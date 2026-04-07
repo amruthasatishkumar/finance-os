@@ -29,7 +29,13 @@ export async function getFinancialSummary() {
 
   // Income calculations
   const grossMonthly = calcMonthlyGrossIncome(incomeSources)
-  const netMonthly = calcMonthlyNetIncome(incomeSources, assumptions.filingStatus, assumptions.stateTaxRate)
+  const netMonthly = calcMonthlyNetIncome(
+    incomeSources,
+    assumptions.filingStatus,
+    assumptions.stateTaxRate,
+    (assumptions as any).preTaxDeductions ?? 23500,
+    profile.state,
+  )
 
   // Expense calculations
   const totalExpenses = calcMonthlyExpenses(expenses)

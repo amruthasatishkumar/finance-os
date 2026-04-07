@@ -30,6 +30,7 @@ const AssumptionsSchema = z.object({
   includeSocialSecurity: z.boolean().default(false),
   safeWithdrawalRate: z.coerce.number().min(0.02).max(0.08).default(0.04),
   usdToInrRate: z.coerce.number().min(50).max(200).default(83.5),
+  preTaxDeductions: z.coerce.number().min(0).max(100000).default(23500),
 })
 
 export async function updateProfile(data: z.infer<typeof ProfileSchema>) {

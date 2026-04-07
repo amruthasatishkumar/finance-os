@@ -78,6 +78,7 @@ export function SettingsClient({ profile, assumptions }: Props) {
       includeSocialSecurity: assumptions?.includeSocialSecurity ?? false,
       safeWithdrawalRate: assumptions?.safeWithdrawalRate ?? 0.04,
       usdToInrRate: assumptions?.usdToInrRate ?? 83.5,
+      preTaxDeductions: (assumptions as any)?.preTaxDeductions ?? 23500,
     },
   })
 
@@ -193,7 +194,7 @@ export function SettingsClient({ profile, assumptions }: Props) {
               { key: 'inflationRate', label: 'Inflation Rate (e.g. 0.035 = 3.5%)', step: '0.001' },
               { key: 'salaryGrowthRate', label: 'Expected Salary Growth', step: '0.01' },
               { key: 'investmentReturnRate', label: 'Investment Return Rate', step: '0.01' },
-              { key: 'stateTaxRate', label: 'State Tax Rate', step: '0.001' },
+              { key: 'stateTaxRate', label: 'State Tax Rate (used for non-CA states)', step: '0.001' },
               { key: 'safeWithdrawalRate', label: 'Safe Withdrawal Rate', step: '0.001' },
               { key: 'usdToInrRate', label: 'USD to INR Rate', step: '0.5' },
               { key: 'emergencyFundMonths', label: 'Emergency Fund Months', step: '1' },
@@ -205,6 +206,13 @@ export function SettingsClient({ profile, assumptions }: Props) {
                 <input {...assumptionsForm.register(key as any)} type="number" step={step} className={inputClass} />
               </div>
             ))}
+            <div className="col-span-2">
+              <label className={labelClass}>Annual Pre-tax Deductions ($)</label>
+              <input {...assumptionsForm.register('preTaxDeductions' as any)} type="number" step="500" className={inputClass} />
+              <p className="text-xs text-[#64748B] mt-1">
+                Total of 401k traditional + HSA + FSA contributions per year. Reduces your federal and state taxable income. Max 401k 2025: $23,500. Max HSA: $4,300.
+              </p>
+            </div>
             <div className="col-span-2">
               <label className={labelClass}>Filing Status</label>
               <select {...assumptionsForm.register('filingStatus')} className={inputClass}>

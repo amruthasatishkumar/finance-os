@@ -2,6 +2,41 @@
 // 2025 US TAX CONSTANTS
 // ─────────────────────────────────────────
 
+// ── California state income tax (2025, single filer) ──────────────────────────
+// Source: CA FTB Schedule X/Y/Z
+export const CA_STATE_TAX_BRACKETS_2025_SINGLE = [
+  { min: 0,       max: 10756,  rate: 0.01 },
+  { min: 10756,   max: 25499,  rate: 0.02 },
+  { min: 25499,   max: 40245,  rate: 0.04 },
+  { min: 40245,   max: 55866,  rate: 0.06 },
+  { min: 55866,   max: 70606,  rate: 0.08 },
+  { min: 70606,   max: 360659, rate: 0.093 },
+  { min: 360659,  max: 432787, rate: 0.103 },
+  { min: 432787,  max: 721314, rate: 0.113 },
+  { min: 721314,  max: Infinity, rate: 0.123 },
+]
+
+export const CA_STATE_TAX_BRACKETS_2025_MFJ = [
+  { min: 0,       max: 21512,  rate: 0.01 },
+  { min: 21512,   max: 50998,  rate: 0.02 },
+  { min: 50998,   max: 80490,  rate: 0.04 },
+  { min: 80490,   max: 111732, rate: 0.06 },
+  { min: 111732,  max: 141212, rate: 0.08 },
+  { min: 141212,  max: 721318, rate: 0.093 },
+  { min: 721318,  max: 865574, rate: 0.103 },
+  { min: 865574,  max: 1442628, rate: 0.113 },
+  { min: 1442628, max: Infinity, rate: 0.123 },
+]
+
+// CA SDI (State Disability Insurance) — 1.1% on all wages, no cap (2025)
+export const CA_SDI_RATE_2025 = 0.011
+
+// Standard deduction for CA (much smaller than federal — $5,540 single 2025)
+export const CA_STANDARD_DEDUCTION_2025 = {
+  single: 5540,
+  married_jointly: 11080,
+}
+
 export const FEDERAL_TAX_BRACKETS_2025_SINGLE = [
   { min: 0, max: 11925, rate: 0.10 },
   { min: 11925, max: 48475, rate: 0.12 },
