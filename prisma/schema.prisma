@@ -1,0 +1,487 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ─────────────────────────────────────────
+// USER PROFILE & SETTINGS
+// ─────────────────────────────────────────
+
+model UserProfile {
+  id                  String   @id @default(cuid())
+  name                String   @default("Your Name")
+  age                 Int      @default(28)
+  state               String   @default("California") // US state
+  city                String?
+  currency            String   @default("USD")
+  taxFilingStatus     String   @default("single") // single | married_jointly | married_separately | head_of_household
+  dependents          Int      @default(0)
+  visaStatus          String   @default("h1b") // h1b | gc_pending | gc | citizen | other
+  homeCountry         String   @default("India")
+  riskAppetite        String   @default("moderate") // conservative | moderate | aggressive
+  planningStyle       String   @default("balanced") // aggressive_saver | balanced | lifestyle_optimizer
+  avatarColor         String   @default("#6366F1")
+  onboardingComplete  Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  assumptions         FinancialAssumptions?
+  visaInfo            VisaInfo?
+}
+
+model FinancialAssumptions {
+  id                      String  @id @default(cuid())
+  userId                  String  @unique
+  user                    UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Rates
+  inflationRate           Float   @default(0.035)     // 3.5%
+  salaryGrowthRate        Float   @default(0.05)      // 5%
+  investmentReturnRate    Float   @default(0.08)      // 8% nominal
+  conservativeReturnRate  Float   @default(0.06)      // 6%
+  optimisticReturnRate    Float   @default(0.10)      // 10%
+
+  // Tax
+  stateTaxRate            Float   @default(0.093)     // CA default 9.3%
+  effectiveFederalRate    Float   @default(0.22)      // estimated
+  filingStatus            String  @default("single")
+
+  // Emergency fund
+  emergencyFundMonths     Int     @default(12)        // 12 for H1B (vs 6 standard)
+
+  // Retirement
+  retirementAge           Int     @default(60)
+  lifeExpectancy          Int     @default(85)
+  includeSocialSecurity   Boolean @default(false)     // false for India nationals (no totalization)
+  estimatedSSBenefit      Float   @default(0)         // monthly benefit, only if above = true
+
+  // FIRE
+  safeWithdrawalRate      Float   @default(0.04)      // 4% rule
+
+  // Currency
+  usdToInrRate            Float   @default(83.5)
+
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
+model VisaInfo {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  visaType           String   @default("H1B")
+  expiryDate         DateTime?
+  sponsorEmployer    String?
+  gcPetitionStage    String   @default("none") // none | perm_in_progress | i140_filed | i140_approved | waiting_priority | i485_filed | approved
+  priorityDate       DateTime?
+  estimatedGcCost    Float    @default(25000)  // $15k-$40k range
+  gcCostSaved        Float    @default(0)
+  lastH1bRenewalDate DateTime?
+  nextH1bRenewalDue  DateTime?
+  homeCountry        String   @default("India")
+  passportExpiry     DateTime?
+  notes              String?
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────
+// INCOME
+// ─────────────────────────────────────────
+
+model IncomeSource {
+  id              String   @id @default(cuid())
+  name            String
+  type            String   // salary | bonus | rsu | freelance | rental | interest | dividend | remittance_credit | other
+  amount          Float    // gross amount
+  frequency       String   @default("monthly") // monthly | annual | quarterly | one_time | biweekly
+  taxable         Boolean  @default(true)
+  growthRate      Float    @default(0.05)  // annual expected growth
+  scenario        String   @default("base") // base | conservative | optimistic
+  isActive        Boolean  @default(true)
+  notes           String?
+  startDate       DateTime @default(now())
+  endDate         DateTime?
+
+  // RSU specific
+  rsuVestingDate  DateTime?
+  rsuShareCount   Float?
+  rsuFMVAtVest    Float?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────
+// EXPENSES
+// ─────────────────────────────────────────
+
+model ExpenseCategory {
+  id       String    @id @default(cuid())
+  name     String
+  icon     String?
+  color    String?
+  isH1b    Boolean   @default(false) // H1B-specific category
+  isFixed  Boolean   @default(false)
+  sortOrder Int      @default(0)
+
+  expenses Expense[]
+}
+
+model Expense {
+  id           String          @id @default(cuid())
+  name         String
+  categoryId   String
+  category     ExpenseCategory @relation(fields: [categoryId], references: [id])
+  amount       Float
+  frequency    String          @default("monthly") // monthly | annual | quarterly | weekly | one_time
+  isFixed      Boolean         @default(false)
+  isEssential  Boolean         @default(true)
+  notes        String?
+  isActive     Boolean         @default(true)
+  startDate    DateTime        @default(now())
+  endDate      DateTime?
+
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+// ─────────────────────────────────────────
+// ASSETS
+// ─────────────────────────────────────────
+
+model Asset {
+  id            String   @id @default(cuid())
+  name          String
+  type          String   // checking | savings | 401k | roth_ira | hsa | brokerage | nre_account | nro_account | fcnr | crypto | vehicle | real_estate | other
+  balance       Float    @default(0)
+  currency      String   @default("USD")
+  institution   String?
+  accountLast4  String?
+  isForeignAccount Boolean @default(false) // Triggers FBAR check
+  aprInterest   Float?   // for interest-bearing accounts
+  notes         String?
+  isActive      Boolean  @default(true)
+
+  // For retirement/investment accounts
+  contributionYTD   Float? @default(0)
+  irsAnnualLimit    Float? // 401k: 23500, Roth IRA: 7000, HSA: 4300 (2025)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────
+// LIABILITIES / DEBT
+// ─────────────────────────────────────────
+
+model Liability {
+  id                String        @id @default(cuid())
+  name              String
+  type              String        // student_loan | auto_loan | credit_card | mortgage | personal_loan | h1b_legal_fee | other
+  principalBalance  Float
+  originalBalance   Float
+  interestRate      Float         // annual % e.g. 0.065 = 6.5%
+  minimumPayment    Float
+  extraPayment      Float         @default(0)
+  paymentFrequency  String        @default("monthly")
+  startDate         DateTime?
+  payoffDate        DateTime?     // calculated or target
+  lender            String?
+  notes             String?
+  isActive          Boolean       @default(true)
+
+  payments          DebtPayment[]
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
+model DebtPayment {
+  id            String    @id @default(cuid())
+  liabilityId   String
+  liability     Liability @relation(fields: [liabilityId], references: [id], onDelete: Cascade)
+  amount        Float
+  principal     Float
+  interest      Float
+  date          DateTime  @default(now())
+  notes         String?
+
+  createdAt     DateTime  @default(now())
+}
+
+// ─────────────────────────────────────────
+// INVESTMENTS
+// ─────────────────────────────────────────
+
+model Investment {
+  id              String                  @id @default(cuid())
+  name            String
+  type            String                  // index_fund | etf | stock | mutual_fund | bond | reit | crypto | nre_fd | nro_fd | fcnr | savings_bond | other
+  accountType     String                  // taxable | traditional_401k | roth_401k | roth_ira | traditional_ira | hsa | nre | nro | fcnr | other
+  currentValue    Float                   @default(0)
+  costBasis       Float                   @default(0)
+  ticker          String?                 // optional stock/ETF ticker
+  allocation      Float                   @default(0)   // % of portfolio
+  currency        String                  @default("USD")
+  institution     String?
+  isForeignAccount Boolean               @default(false)
+  notes           String?
+  isActive        Boolean                 @default(true)
+
+  contributions   InvestmentContribution[]
+
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+}
+
+model InvestmentContribution {
+  id            String     @id @default(cuid())
+  investmentId  String
+  investment    Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+  amount        Float
+  date          DateTime   @default(now())
+  type          String     @default("contribution") // contribution | withdrawal | dividend | gain
+  notes         String?
+
+  createdAt     DateTime   @default(now())
+}
+
+// ─────────────────────────────────────────
+// GOALS
+// ─────────────────────────────────────────
+
+model Goal {
+  id                   String          @id @default(cuid())
+  name                 String
+  type                 String          // emergency_fund | h1b_renewal | green_card | debt_payoff | home_down_payment | vehicle | wedding | travel | family_support | education | career_transition | sabbatical | child_planning | retirement | fire | custom
+  targetAmount         Float
+  currentAmount        Float           @default(0)
+  targetDate           DateTime?
+  priority             Int             @default(5)      // 1-10, 10 = highest
+  monthlyContrib       Float           @default(0)
+  whyItMatters         String?
+  dependencies         String?         // JSON array of goal IDs this depends on
+  status               String          @default("active") // active | paused | completed | cancelled
+  confidenceScore      Float           @default(0)     // 0-100, calculated
+  isInflationAdjusted  Boolean         @default(true)
+  notes                String?
+  icon                 String?
+  color                String?
+
+  milestones           GoalMilestone[]
+  allocations          GoalAllocation[]
+
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+}
+
+model GoalMilestone {
+  id          String   @id @default(cuid())
+  goalId      String
+  goal        Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  name        String
+  amount      Float
+  targetDate  DateTime?
+  isCompleted Boolean  @default(false)
+  completedAt DateTime?
+  notes       String?
+
+  createdAt   DateTime @default(now())
+}
+
+model GoalAllocation {
+  id       String @id @default(cuid())
+  goalId   String
+  goal     Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  assetId  String // references Asset.id (soft reference)
+  amount   Float
+  notes    String?
+
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────
+// FINANCIAL SNAPSHOTS (monthly)
+// ─────────────────────────────────────────
+
+model FinancialSnapshot {
+  id                    String   @id @default(cuid())
+  month                 String   @unique // YYYY-MM format e.g. "2026-04"
+
+  // Cash flow
+  totalIncomeGross      Float    @default(0)
+  totalIncomeNet        Float    @default(0)
+  totalExpenses         Float    @default(0)
+  freeCashFlow          Float    @default(0)
+
+  // Balance sheet
+  totalAssets           Float    @default(0)
+  totalLiabilities      Float    @default(0)
+  netWorth              Float    @default(0)
+
+  // Derived rates
+  savingsRate           Float    @default(0)  // %
+  investmentRate        Float    @default(0)  // %
+  debtBurdenRatio       Float    @default(0)  // %
+  fixedExpenseRatio     Float    @default(0)  // %
+
+  // Emergency fund
+  liquidAssets          Float    @default(0)
+  emergencyFundMonths   Float    @default(0)
+  emergencyFundTarget   Float    @default(0)
+
+  // Scores (0-100)
+  healthScore           Float    @default(0)
+  futureReadinessScore  Float    @default(0)
+  disciplineScore       Float    @default(0)
+
+  // Goals
+  avgGoalConfidence     Float    @default(0)
+  goalsOnTrack          Int      @default(0)
+  goalsOffTrack         Int      @default(0)
+
+  // H1B specific
+  fbarThresholdStatus   String   @default("safe") // safe | warning | exceeded
+  foreignAccountsTotal  Float    @default(0)
+  totalRemittanceUSD    Float    @default(0)
+
+  notes                 String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────
+// SIMULATIONS
+// ─────────────────────────────────────────
+
+model Simulation {
+  id              String   @id @default(cuid())
+  name            String
+  type            String   // preset | custom
+  presetKey       String?  // salary_increase | job_loss | relocate_tx | buy_home | etc.
+  parameters      String   // JSON: simulation parameters
+  results         String   // JSON: computed results
+  isFavorite      Boolean  @default(false)
+  notes           String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────
+// AI SUMMARIES
+// ─────────────────────────────────────────
+
+model AiSummary {
+  id          String   @id @default(cuid())
+  month       String   // YYYY-MM
+  type        String   @default("monthly") // monthly | chat | insight
+  prompt      String
+  response    String
+  contextHash String?  // hash of the context used, for caching
+
+  createdAt   DateTime @default(now())
+}
+
+// ─────────────────────────────────────────
+// NOTES, REFLECTIONS, LIFE EVENTS
+// ─────────────────────────────────────────
+
+model Note {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  tags      String?  // comma-separated tags
+  isPinned  Boolean  @default(false)
+  goalId    String?  // optional link to a goal
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Reflection {
+  id      String   @id @default(cuid())
+  title   String
+  body    String
+  mood    String?  // 😊 Great | 🙂 Good | 😐 Okay | 😟 Stressed | 😔 Worried
+  period  String?  // YYYY-MM
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LifeEvent {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // job_change | promotion | moved | visa_milestone | investment | purchase | travel | personal | other
+  eventDate DateTime
+  amount    Float?   // financial impact if any
+  notes     String?
+  icon      String?
+
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────
+// REMINDERS
+// ─────────────────────────────────────────
+
+model Reminder {
+  id          String   @id @default(cuid())
+  title       String
+  body        String?
+  type        String   @default("custom") // fbar | fatca | h1b_renewal | gc_filing | irs_deadline | custom | monthly_review
+  dueDate     DateTime
+  isCompleted Boolean  @default(false)
+  completedAt DateTime?
+  isRecurring Boolean  @default(false)
+  recurringRule String? // YYYY-MM pattern or "annual"
+  priority    String   @default("medium") // low | medium | high | critical
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────
+// DOCUMENTS VAULT (metadata only)
+// ─────────────────────────────────────────
+
+model Document {
+  id          String    @id @default(cuid())
+  name        String
+  type        String    // passport | visa | i797 | employment | tax_return | bank_statement | insurance | property | vehicle | fbar | other
+  notes       String?
+  isPinned    Boolean   @default(false)
+  expiryDate  DateTime?
+  tags        String?
+  localPath   String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ─────────────────────────────────────────
+// REMITTANCE LOG
+// ─────────────────────────────────────────
+
+model RemittanceLog {
+  id           String   @id @default(cuid())
+  amount       Float
+  currency     String   @default("USD")
+  toCountry    String   @default("India")
+  method       String   @default("Wise") // Wise | Remitly | ICICI Money2India | Wire Transfer | Other
+  exchangeRate Float?
+  notes        String?
+
+  createdAt    DateTime @default(now())
+}

@@ -1,0 +1,233 @@
+/* ─── Google Fonts (Inter) — must be first @import ─── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+/* ─── Finance OS Design Tokens ─── */
+@theme inline {
+  /* Colors */
+  --color-bg-base:      #0F172A;
+  --color-bg-card:      #1E293B;
+  --color-bg-elevated:  #334155;
+  --color-bg-input:     #1E293B;
+  --color-border:       #334155;
+  --color-border-muted: #1E293B;
+
+  --color-text-primary:   #F8FAFC;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted:     #64748B;
+  --color-text-inverse:   #0F172A;
+
+  --color-accent-primary: #6366F1;
+  --color-accent-success: #10B981;
+  --color-accent-warning: #F59E0B;
+  --color-accent-danger:  #EF4444;
+  --color-accent-gold:    #FBBF24;
+  --color-accent-purple:  #8B5CF6;
+  --color-accent-cyan:    #06B6D4;
+  --color-accent-pink:    #EC4899;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Borders */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  20px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-elevated: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+/* ─── Base styles ─── */
+* {
+  box-sizing: border-box;
+  border-color: #334155;
+}
+
+html, body {
+  height: 100%;
+  background-color: #0F172A;
+  color: #F8FAFC;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Tabular numbers for financial data ─── */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ─── Scrollbar styling ─── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0F172A;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* ─── Card base ─── */
+.card {
+  background: #1E293B;
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  border-radius: 12px;
+}
+
+.card-elevated {
+  background: #1E293B;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+/* ─── Badge utilities ─── */
+.badge-emerald {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+.badge-amber {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+.badge-red {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+.badge-indigo {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+  background-color: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+}
+
+/* ─── Gradient text ─── */
+.gradient-text {
+  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #06B6D4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Gradient backgrounds ─── */
+.gradient-primary {
+  background: linear-gradient(135deg, #6366F1, #8B5CF6);
+}
+.gradient-success {
+  background: linear-gradient(135deg, #10B981, #06B6D4);
+}
+.gradient-warning {
+  background: linear-gradient(135deg, #F59E0B, #F97316);
+}
+.gradient-danger {
+  background: linear-gradient(135deg, #EF4444, #EC4899);
+}
+
+/* ─── Smooth transitions ─── */
+.transition-smooth {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Selection color ─── */
+::selection {
+  background-color: rgba(99, 102, 241, 0.3);
+  color: #F8FAFC;
+}
+
+/* ─── Focus styles ─── */
+:focus-visible {
+  outline: 2px solid #6366F1;
+  outline-offset: 2px;
+}
+
+/* ─── Input styles ─── */
+input, textarea, select {
+  background-color: #1E293B;
+  color: #F8FAFC;
+  border-color: #334155;
+}
+input::placeholder, textarea::placeholder {
+  color: #64748B;
+}
+
+/* ─── Recharts overrides ─── */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: #1E293B;
+}
+.recharts-tooltip-wrapper {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* ─── Animations ─── */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+
+/* ─── Loading skeleton ─── */
+.skeleton {
+  background: linear-gradient(90deg, #1E293B 25%, #334155 50%, #1E293B 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+/* ─── Page transition ─── */
+.page-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.25s, transform 0.25s;
+}
+
