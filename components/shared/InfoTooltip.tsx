@@ -31,10 +31,10 @@ export function InfoTooltip({ text, className }: InfoTooltipProps) {
         onClick={() => setOpen((v) => !v)}
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
-        className="w-3.5 h-3.5 text-slate-500 hover:text-slate-300 transition-colors focus:outline-none"
+        className="flex items-center justify-center w-4 h-4 rounded-full bg-[#334155] hover:bg-[#475569] text-[#94A3B8] hover:text-[#F8FAFC] transition-all focus:outline-none shrink-0"
         aria-label="More information"
       >
-        <Info className="w-full h-full" />
+        <Info className="w-2.5 h-2.5" />
       </button>
       {open && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-56 pointer-events-none">
