@@ -30,7 +30,7 @@ Verify: `pnpm -v`
 ## Getting the project
 
 ```bash
-git clone <your-github-repo-url>
+git clone https://github.com/amruthasatishkumar/finance-os.git
 cd finance-os
 ```
 
