@@ -2,12 +2,12 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Shield, AlertTriangle, Clock, Globe, TrendingUp, Plus, X } from 'lucide-react'
+import { Shield, AlertTriangle, Clock, Globe, TrendingUp, Plus, X, Trash2 } from 'lucide-react'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { SectionHeader, AlertBanner } from '@/components/shared/index'
 import { formatCurrency } from '@/lib/utils'
 import { daysUntil } from '@/lib/utils'
-import { addRemittanceLog } from '@/actions/h1b'
+import { addRemittanceLog, deleteRemittanceLog } from '@/actions/h1b'
 import type { VisaInfo, Asset, RemittanceLog } from '@/generated/prisma/client'
 
 const GC_STAGES = [
@@ -36,6 +36,7 @@ interface Props {
 export function H1BClient({ visaInfo, remittances, foreignAssets, foreignTotal, fbarStatus, usdToInr, includeSocialSecurity }: Props) {
   const [showRemittanceForm, setShowRemittanceForm] = useState(false)
   const [remittanceList, setRemittanceList] = useState(remittances)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [form, setForm] = useState({ amount: '', currency: 'USD', toCountry: 'India', method: 'Wise', exchangeRate: '', notes: '' })
   const [loading, setLoading] = useState(false)
 
@@ -64,6 +65,16 @@ export function H1BClient({ visaInfo, remittances, foreignAssets, foreignTotal, 
       setForm({ amount: '', currency: 'USD', toCountry: 'India', method: 'Wise', exchangeRate: '', notes: '' })
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleDeleteRemittance(id: string) {
+    setDeletingId(id)
+    try {
+      await deleteRemittanceLog(id)
+      setRemittanceList((prev) => prev.filter((r) => r.id !== id))
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -228,14 +239,24 @@ export function H1BClient({ visaInfo, remittances, foreignAssets, foreignTotal, 
         <div className="mt-4 space-y-2">
           {remittanceList.length === 0 && <p className="text-slate-500 text-sm text-center py-6">No remittance records yet.</p>}
           {remittanceList.slice(0, 10).map((r) => (
-            <div key={r.id} className="flex items-center justify-between py-2 border-b border-[#1E293B] last:border-0">
+            <div key={r.id} className="flex items-center justify-between py-2.5 border-b border-[#1E293B] last:border-0 group">
               <div>
                 <p className="text-sm text-[#F8FAFC]">{r.method} → {r.toCountry}</p>
                 <p className="text-xs text-[#475569]">{new Date(r.createdAt).toLocaleDateString()}</p>
+                {r.notes && <p className="text-xs text-[#64748B] mt-0.5">{r.notes}</p>}
               </div>
-              <div className="text-right">
-                <p className="text-sm font-medium text-[#F8FAFC]">{formatCurrency(r.amount, r.currency)}</p>
-                {r.exchangeRate && <p className="text-xs text-[#475569]">@ {r.exchangeRate}</p>}
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <p className="text-sm font-medium text-[#F8FAFC]">{formatCurrency(r.amount, r.currency)}</p>
+                  {r.exchangeRate && <p className="text-xs text-[#475569]">@ {r.exchangeRate}</p>}
+                </div>
+                <button
+                  onClick={() => handleDeleteRemittance(r.id)}
+                  disabled={deletingId === r.id}
+                  className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-900/30 rounded-lg transition-all disabled:opacity-50"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                </button>
               </div>
             </div>
           ))}

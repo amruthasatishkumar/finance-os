@@ -68,3 +68,8 @@ export async function addRemittanceLog(data: {
 export async function getRemittanceLogs() {
   return prisma.remittanceLog.findMany({ orderBy: { createdAt: 'desc' }, take: 50 })
 }
+
+export async function deleteRemittanceLog(id: string) {
+  await prisma.remittanceLog.delete({ where: { id } })
+  revalidatePath('/h1b')
+}
