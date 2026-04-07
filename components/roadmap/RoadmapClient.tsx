@@ -21,18 +21,19 @@ export function RoadmapClient({ summary, snapshots, goals, assumptions, lifeEven
   const retirementAge = assumptions?.retirementAge ?? 60
   const currentAge = summary?.profile?.age ?? 29
   const yearsToRetirement = retirementAge - currentAge
+  const monthlyInvestable = Math.max(0, summary?.freeCashFlow ?? 0)
 
   const projectionPoints = useMemo(() => {
     const returnRate = assumptions?.investmentReturnRate ?? 0.08
     return calcPortfolioProjection(
-      summary?.totalAssets ?? 100000,
-      2500,
+      summary?.totalAssets ?? 0,
+      monthlyInvestable,
       Math.max(10, yearsToRetirement),
       returnRate - 0.02,
       returnRate,
       returnRate + 0.02,
     )
-  }, [summary, assumptions, yearsToRetirement])
+  }, [summary, assumptions, yearsToRetirement, monthlyInvestable])
 
   const chartData = projectionPoints.map((p: ProjectionPoint) => ({
     label: `${p.year}`,
@@ -87,7 +88,7 @@ export function RoadmapClient({ summary, snapshots, goals, assumptions, lifeEven
       <div className="card p-5">
         <h3 className="font-semibold text-white mb-1">Net Worth Projection</h3>
         <p className="text-xs text-[#475569] mb-4">
-          Age {currentAge} → {retirementAge} · assumes {formatCurrency(2500)}/mo investable savings
+          Age {currentAge} → {retirementAge} · {formatCurrency(monthlyInvestable)}/mo free cash flow invested
         </p>
         <FinanceAreaChart
           data={chartData as any}

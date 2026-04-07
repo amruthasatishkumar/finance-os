@@ -185,11 +185,11 @@ export function SimulatorClient({ summary, simulations, assumptions }: Props) {
   }
 
   const financialState: FinancialState = {
-    monthlyNetIncome:        summary?.netMonthly ?? 8000,
-    monthlyExpenses:         summary?.totalExpenses ?? 5000,
-    totalAssets:             summary?.totalAssets ?? 100000,
-    totalLiabilities:        summary?.totalLiabilities ?? 26000,
-    monthlyInvestmentContrib: 1500,
+    monthlyNetIncome:        summary?.netMonthly ?? 0,
+    monthlyExpenses:         summary?.totalExpenses ?? 0,
+    totalAssets:             summary?.totalAssets ?? 0,
+    totalLiabilities:        summary?.totalLiabilities ?? 0,
+    monthlyInvestmentContrib: Math.max(0, summary?.freeCashFlow ?? 0),
     goals: (summary?.goals ?? []).map((g: any) => ({
       id: g.id,
       name: g.name,
