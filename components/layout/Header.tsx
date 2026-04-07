@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Bell, Search, ChevronRight, RefreshCw, X } from 'lucide-react'
+import { Bell, ChevronRight, RefreshCw, X, Trash2, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { resetOnboarding } from '@/actions/profile'
+import { clearFinancialData } from '@/actions/data'
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/dashboard': { title: 'Dashboard', subtitle: 'Your financial command center' },
@@ -33,12 +34,28 @@ export function Header({ pendingReminders }: HeaderProps) {
   const router = useRouter()
   const page = pageTitles[pathname] ?? { title: 'Finance OS', subtitle: 'Personal Finance Command Center' }
   const [showWizard, setShowWizard] = useState(false)
+  const [showReset, setShowReset] = useState(false)
   const [launching, setLaunching] = useState(false)
+  const [resetting, setResetting] = useState(false)
+  const [resetDone, setResetDone] = useState(false)
 
   async function handleLaunchWizard() {
     setLaunching(true)
     await resetOnboarding()
     router.push('/onboarding')
+  }
+
+  async function handleReset() {
+    setResetting(true)
+    await clearFinancialData()
+    setResetting(false)
+    setResetDone(true)
+    setTimeout(() => {
+      setShowReset(false)
+      setResetDone(false)
+      router.push('/dashboard')
+      router.refresh()
+    }, 1200)
   }
 
   return (
@@ -55,11 +72,13 @@ export function Header({ pendingReminders }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Search placeholder */}
-        <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1E293B] text-[#64748B] text-xs hover:text-[#94A3B8] transition-colors border border-[#334155]">
-          <Search className="w-3.5 h-3.5" />
-          <span className="hidden sm:block">Search...</span>
-          <kbd className="hidden sm:block text-[10px] bg-[#334155] px-1.5 py-0.5 rounded">⌘K</kbd>
+        {/* Reset Data button */}
+        <button
+          onClick={() => setShowReset(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600/10 border border-red-500/20 text-red-400 hover:bg-red-600/20 text-xs font-medium transition-colors"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          <span className="hidden sm:block">Reset Data</span>
         </button>
 
         {/* Setup Wizard button */}
@@ -128,6 +147,50 @@ export function Header({ pendingReminders }: HeaderProps) {
               >
                 <RefreshCw className={`w-4 h-4 ${launching ? 'animate-spin' : ''}`} />
                 {launching ? 'Redirecting...' : 'Launch Wizard'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Reset Confirmation Modal */}
+      {showReset && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => !resetting && setShowReset(false)}>
+          <div className="bg-[#0F172A] border border-[#1E293B] rounded-2xl p-6 w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <h2 className="text-white font-semibold">Reset All Data</h2>
+                  <p className="text-xs text-[#64748B]">This cannot be undone</p>
+                </div>
+              </div>
+              <button onClick={() => setShowReset(false)} disabled={resetting} className="p-2 hover:bg-[#1E293B] rounded-xl transition-colors">
+                <X className="w-4 h-4 text-[#64748B]" />
+              </button>
+            </div>
+            <p className="text-sm text-[#94A3B8] mb-4">
+              This will permanently delete all your income sources, expenses, debts, assets, investments, and goals. Your profile and settings will be kept.
+            </p>
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-xs text-red-300 mb-5">
+              ⚠️ All financial data will be wiped. Run Setup again to re-enter your data.
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowReset(false)}
+                disabled={resetting}
+                className="flex-1 px-4 py-2.5 bg-[#1E293B] hover:bg-[#334155] text-[#94A3B8] rounded-xl text-sm transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReset}
+                disabled={resetting || resetDone}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-500 disabled:opacity-60 text-white rounded-xl text-sm font-medium transition-colors"
+              >
+                <Trash2 className={`w-4 h-4 ${resetting ? 'animate-pulse' : ''}`} />
+                {resetDone ? 'Cleared!' : resetting ? 'Clearing...' : 'Reset All Data'}
               </button>
             </div>
           </div>
