@@ -19,6 +19,8 @@ import {
   ChevronLeft,
   DollarSign,
   ShieldCheck,
+  BookOpen,
+  Archive,
 } from 'lucide-react'
 
 const navItems = [
@@ -57,6 +59,13 @@ const navItems = [
     group: 'Intelligence',
     items: [
       { href: '/assistant', label: 'AI Assistant', icon: Bot },
+    ],
+  },
+  {
+    group: 'Journal',
+    items: [
+      { href: '/notes', label: 'Notes & Reflections', icon: BookOpen },
+      { href: '/vault', label: 'Document Vault', icon: Archive },
     ],
   },
   {

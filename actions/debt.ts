@@ -58,9 +58,19 @@ export async function recordDebtPayment(data: {
   principal: number
   interest: number
   notes?: string
+  date?: string
 }) {
-  const [payment, _] = await Promise.all([
-    prisma.debtPayment.create({ data }),
+  const [payment] = await Promise.all([
+    prisma.debtPayment.create({
+      data: {
+        liabilityId: data.liabilityId,
+        amount: data.amount,
+        principal: data.principal,
+        interest: data.interest,
+        notes: data.notes ?? null,
+        date: data.date ? new Date(data.date) : new Date(),
+      },
+    }),
     prisma.liability.update({
       where: { id: data.liabilityId },
       data: { principalBalance: { decrement: data.principal } },
@@ -69,4 +79,11 @@ export async function recordDebtPayment(data: {
   revalidatePath('/debt')
   revalidatePath('/dashboard')
   return payment
+}
+
+export async function getDebtPayments(liabilityId: string) {
+  return prisma.debtPayment.findMany({
+    where: { liabilityId },
+    orderBy: { date: 'desc' },
+  })
 }

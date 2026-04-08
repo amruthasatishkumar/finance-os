@@ -330,13 +330,13 @@ export async function updateGoalStatus(id: string, status: 'active' | 'paused' |
 
 // ─── Note CRUD ────────────────────────────────────────────────────────────────
 
-export async function createNote(data: { title: string; content: string; tags?: string; isPinned?: boolean; goalId?: string }) {
+export async function createNote(data: { title: string; body: string; tags?: string; isPinned?: boolean; goalId?: string }) {
   const result = await prisma.note.create({ data })
   revalidatePath('/notes')
   return result
 }
 
-export async function updateNote(id: string, data: Partial<{ title: string; content: string; tags: string; isPinned: boolean }>) {
+export async function updateNote(id: string, data: Partial<{ title: string; body: string; tags: string; isPinned: boolean }>) {
   const result = await prisma.note.update({ where: { id }, data })
   revalidatePath('/notes')
   return result

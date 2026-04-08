@@ -51,7 +51,7 @@ export async function deleteGoal(id: string) {
   revalidatePath('/dashboard')
 }
 
-export async function addGoalContribution(goalId: string, amount: number) {
+export async function addGoalContribution(goalId: string, amount: number, notes?: string, date?: string) {
   const goal = await prisma.goal.findUnique({ where: { id: goalId } })
   if (!goal) throw new Error('Goal not found')
   const updated = await prisma.goal.update({
@@ -61,9 +61,24 @@ export async function addGoalContribution(goalId: string, amount: number) {
   if (updated.currentAmount >= updated.targetAmount) {
     await prisma.goal.update({ where: { id: goalId }, data: { status: 'completed' } })
   }
+  await prisma.goalContribution.create({
+    data: {
+      goalId,
+      amount,
+      notes: notes || null,
+      date: date ? new Date(date) : new Date(),
+    },
+  })
   revalidatePath('/goals')
   revalidatePath('/dashboard')
   return updated
+}
+
+export async function getGoalContributions(goalId: string) {
+  return prisma.goalContribution.findMany({
+    where: { goalId },
+    orderBy: { date: 'desc' },
+  })
 }
 
 export async function createMilestone(data: {

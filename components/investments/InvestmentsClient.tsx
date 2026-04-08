@@ -1,19 +1,19 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Edit2, Trash2, X, TrendingUp, PieChart, AlertTriangle } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, TrendingUp, PieChart, AlertTriangle, History } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { SectionHeader, AlertBanner } from '@/components/shared/index'
 import { DonutChart, FinanceAreaChart } from '@/components/charts/index'
 import { formatCurrency, formatPercent } from '@/lib/utils'
 import { calcPortfolioProjection, type ProjectionPoint } from '@/lib/calculations/investments'
-import { createAsset, updateAsset, deleteAsset } from '@/actions/investments'
+import { createAsset, updateAsset, deleteAsset, recordContribution, getContributions } from '@/actions/investments'
 import { IRS_CONTRIBUTION_LIMITS_2025 } from '@/lib/constants'
-import type { Asset, Investment } from '@/generated/prisma/client'
+import type { Asset, Investment, InvestmentContribution } from '@/generated/prisma/client'
 
 const PORTFOLIO_COLORS: Record<string, string> = {
   Checking: '#6366F1', Savings: '#8B5CF6', '401(k)': '#10B981', 'Roth IRA': '#06B6D4',
@@ -69,6 +69,17 @@ export function InvestmentsClient({ assets, totalAssets, netWorth, foreignTotal,
   const [editId, setEditId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'accounts' | 'projection'>('accounts')
+  // Contribution state
+  const [contribAssetId, setContribAssetId] = useState<string | null>(null)
+  const [contribAmount, setContribAmount] = useState('')
+  const [contribType, setContribType] = useState('contribution')
+  const [contribNotes, setContribNotes] = useState('')
+  const [contribDate, setContribDate] = useState(new Date().toISOString().split('T')[0])
+  const [contribLoading, setContribLoading] = useState(false)
+  // History state
+  const [historyAssetId, setHistoryAssetId] = useState<string | null>(null)
+  const [contributions, setContributions] = useState<InvestmentContribution[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -141,6 +152,33 @@ export function InvestmentsClient({ assets, totalAssets, netWorth, foreignTotal,
     setValue('contributionYTD', a.contributionYTD ?? 0)
     setValue('notes', a.notes ?? '')
     setShowForm(true)
+  }
+
+  async function handleContrib() {
+    if (!contribAssetId) return
+    const amount = parseFloat(contribAmount)
+    if (isNaN(amount) || amount <= 0) return
+    setContribLoading(true)
+    try {
+      await recordContribution({ investmentId: contribAssetId, amount, type: contribType, notes: contribNotes || undefined, date: contribDate })
+      const delta = contribType === 'withdrawal' ? -amount : amount
+      setItems((prev) => prev.map((a) => a.id === contribAssetId ? { ...a, balance: a.balance + delta } : a))
+      setContribAssetId(null)
+      setContribAmount('')
+      setContribNotes('')
+      setContribType('contribution')
+      setContribDate(new Date().toISOString().split('T')[0])
+    } finally {
+      setContribLoading(false)
+    }
+  }
+
+  async function openHistory(assetId: string) {
+    setHistoryAssetId(assetId)
+    setHistoryLoading(true)
+    const data = await getContributions(assetId)
+    setContributions(data)
+    setHistoryLoading(false)
   }
 
   async function handleDelete(id: string) {
@@ -233,6 +271,16 @@ export function InvestmentsClient({ assets, totalAssets, netWorth, foreignTotal,
                       <p className="font-semibold text-[#F8FAFC] tabular-nums">{formatCurrency(asset.balance, asset.currency === 'USD' ? 'USD' : 'INR')}</p>
                       {asset.currency !== 'USD' && <p className="text-xs text-[#64748B]">~{formatCurrency(balanceUSD)} USD</p>}
                     </div>
+                    <button
+                      onClick={() => { setContribAssetId(asset.id); setContribAmount(''); setContribNotes(''); setContribType('contribution'); setContribDate(new Date().toISOString().split('T')[0]) }}
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs bg-emerald-600/15 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-600/20 rounded-xl transition-colors font-medium"
+                      title="Add contribution"
+                    >
+                      <Plus className="w-3 h-3" />Add
+                    </button>
+                    <button onClick={() => openHistory(asset.id)} className="p-1.5 hover:bg-[#334155] rounded-lg transition-colors" title="Transaction history">
+                      <History className="w-3.5 h-3.5 text-[#64748B]" />
+                    </button>
                     <button onClick={() => startEdit(asset)} className="p-1.5 hover:bg-[#334155] rounded-lg transition-colors"><Edit2 className="w-3.5 h-3.5 text-[#64748B]" /></button>
                     <button onClick={() => handleDelete(asset.id)} className="p-1.5 hover:bg-red-900/30 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
                   </div>
@@ -315,6 +363,95 @@ export function InvestmentsClient({ assets, totalAssets, netWorth, foreignTotal,
           </motion.div>
         </>
       )}
+
+      {/* Add Contribution Modal */}
+      <AnimatePresence>
+        {contribAssetId && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-40" onClick={() => setContribAssetId(null)} />
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="fixed inset-0 flex items-center justify-center z-50 p-4">
+              <div className="bg-[#0B1120] border border-[#1E293B] rounded-2xl p-6 w-full max-w-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-white font-semibold">Record Transaction</h3>
+                  <button onClick={() => setContribAssetId(null)} className="p-1.5 hover:bg-[#1E293B] rounded-lg"><X className="w-4 h-4 text-[#64748B]" /></button>
+                </div>
+                <div className="space-y-3 mb-4">
+                  <div>
+                    <label className="text-xs text-[#94A3B8] mb-1 block font-medium">Type</label>
+                    <select value={contribType} onChange={(e) => setContribType(e.target.value)} className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-indigo-500 text-sm">
+                      <option value="contribution">Contribution</option>
+                      <option value="withdrawal">Withdrawal</option>
+                      <option value="dividend">Dividend</option>
+                      <option value="gain">Gain/Return</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#94A3B8] mb-1 block font-medium">Amount ($) *</label>
+                    <input type="number" value={contribAmount} onChange={(e) => setContribAmount(e.target.value)} autoFocus
+                      className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm placeholder:text-[#475569]" placeholder="e.g. 500" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#94A3B8] mb-1 block font-medium">Date</label>
+                    <input type="date" value={contribDate} onChange={(e) => setContribDate(e.target.value)}
+                      className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-indigo-500 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#94A3B8] mb-1 block font-medium">Notes (optional)</label>
+                    <input type="text" value={contribNotes} onChange={(e) => setContribNotes(e.target.value)}
+                      className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-indigo-500 text-sm placeholder:text-[#475569]" placeholder="e.g. Monthly 401k contribution" />
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => setContribAssetId(null)} className="flex-1 bg-[#1E293B] hover:bg-[#334155] text-[#94A3B8] py-2.5 rounded-xl text-sm transition-colors">Cancel</button>
+                  <button onClick={handleContrib} disabled={contribLoading} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white py-2.5 rounded-xl text-sm font-medium transition-colors">
+                    {contribLoading ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Transaction History Drawer */}
+      <AnimatePresence>
+        {historyAssetId && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-40" onClick={() => setHistoryAssetId(null)} />
+            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed right-0 top-0 h-full w-full max-w-sm bg-[#0B1120] border-l border-[#1E293B] z-50 overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">Transaction History</h2>
+                    <p className="text-xs text-[#64748B] mt-0.5">{items.find(a => a.id === historyAssetId)?.name}</p>
+                  </div>
+                  <button onClick={() => setHistoryAssetId(null)} className="p-2 hover:bg-[#1E293B] rounded-xl"><X className="w-5 h-5 text-[#64748B]" /></button>
+                </div>
+                {historyLoading ? (
+                  <div className="text-[#64748B] text-sm text-center py-12">Loading...</div>
+                ) : contributions.length === 0 ? (
+                  <div className="text-[#64748B] text-sm text-center py-12">No transactions recorded yet.</div>
+                ) : (
+                  <div className="space-y-3">
+                    {contributions.map((c) => (
+                      <div key={c.id} className="bg-[#1E293B] rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`font-semibold text-sm ${c.type === 'withdrawal' ? 'text-red-400' : 'text-emerald-400'}`}>
+                            {c.type === 'withdrawal' ? '-' : '+'}{formatCurrency(c.amount)}
+                          </span>
+                          <span className="text-xs text-[#64748B]">{new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        </div>
+                        <span className="text-xs text-[#475569] capitalize">{c.type}</span>
+                        {c.notes && <p className="text-xs text-[#94A3B8] mt-1">{c.notes}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

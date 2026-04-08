@@ -66,6 +66,8 @@ export const ModelName = {
   Goal: 'Goal',
   GoalMilestone: 'GoalMilestone',
   GoalAllocation: 'GoalAllocation',
+  GoalContribution: 'GoalContribution',
+  Budget: 'Budget',
   FinancialSnapshot: 'FinancialSnapshot',
   Simulation: 'Simulation',
   AiSummary: 'AiSummary',
@@ -369,6 +371,29 @@ export const GoalAllocationScalarFieldEnum = {
 } as const
 
 export type GoalAllocationScalarFieldEnum = (typeof GoalAllocationScalarFieldEnum)[keyof typeof GoalAllocationScalarFieldEnum]
+
+
+export const GoalContributionScalarFieldEnum = {
+  id: 'id',
+  goalId: 'goalId',
+  amount: 'amount',
+  notes: 'notes',
+  date: 'date',
+  createdAt: 'createdAt'
+} as const
+
+export type GoalContributionScalarFieldEnum = (typeof GoalContributionScalarFieldEnum)[keyof typeof GoalContributionScalarFieldEnum]
+
+
+export const BudgetScalarFieldEnum = {
+  id: 'id',
+  categoryId: 'categoryId',
+  monthlyLimit: 'monthlyLimit',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BudgetScalarFieldEnum = (typeof BudgetScalarFieldEnum)[keyof typeof BudgetScalarFieldEnum]
 
 
 export const FinancialSnapshotScalarFieldEnum = {

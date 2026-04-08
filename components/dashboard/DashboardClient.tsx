@@ -28,6 +28,8 @@ export function DashboardClient({ summary, history }: DashboardClientProps) {
   const [efEditing, setEfEditing] = useState(false)
   const [efMonthsInput, setEfMonthsInput] = useState(String(summary.assumptions?.emergencyFundMonths ?? 12))
   const [efSaving, setEfSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState<'overview' | 'monthly'>('overview')
+  const [selectedMonth, setSelectedMonth] = useState<string>(history.length > 0 ? history[history.length - 1].month : '')
 
   async function saveEfMonths() {
     const val = parseInt(efMonthsInput)
@@ -126,7 +128,21 @@ export function DashboardClient({ summary, history }: DashboardClientProps) {
         </Link>
       </motion.div>
 
+      {/* Tab selector */}
+      <div className="flex gap-2 border-b border-[#1E293B] pb-0">
+        {(['overview', 'monthly'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 text-sm font-medium capitalize transition-colors rounded-t-lg border-b-2 -mb-px ${activeTab === tab ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-[#64748B] hover:text-[#94A3B8]'}`}
+          >
+            {tab === 'monthly' ? '📅 Monthly View' : '📊 Overview'}
+          </button>
+        ))}
+      </div>
+
       {/* Top metric row */}
+      {activeTab === 'overview' && (<>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           title="Net Worth"
@@ -513,6 +529,105 @@ export function DashboardClient({ summary, history }: DashboardClientProps) {
           </div>
         </motion.div>
       </div>
+      </>)}
+
+      {/* Monthly View Tab */}
+      {activeTab === 'monthly' && (
+        <div className="space-y-6">
+          {history.length === 0 ? (
+            <div className="card text-center py-16 text-[#64748B]">
+              <p className="text-4xl mb-4">📅</p>
+              <p className="font-medium text-[#94A3B8]">No monthly snapshots yet.</p>
+              <p className="text-sm mt-1">Snapshots are auto-saved each time you visit the dashboard.</p>
+            </div>
+          ) : (
+            <>
+              {/* Month picker */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-sm text-[#94A3B8] font-medium">Select month:</p>
+                <div className="flex gap-2 flex-wrap">
+                  {[...history].reverse().map((snap) => (
+                    <button
+                      key={snap.month}
+                      onClick={() => setSelectedMonth(snap.month)}
+                      className={`px-3 py-1.5 text-xs rounded-xl transition-colors font-medium ${selectedMonth === snap.month ? 'bg-indigo-600 text-white' : 'bg-[#1E293B] text-[#94A3B8] hover:bg-[#334155]'}`}
+                    >
+                      {snap.month}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {(() => {
+                const snap = history.find(h => h.month === selectedMonth)
+                if (!snap) return null
+                const snapIdx = history.findIndex(h => h.month === selectedMonth)
+                const prev = snapIdx > 0 ? history[snapIdx - 1] : null
+
+                function delta(curr: number, prev: number | undefined) {
+                  if (!prev) return null
+                  const d = curr - prev
+                  return { value: d, pct: prev ? (d / prev) * 100 : 0 }
+                }
+
+                return (
+                  <div className="space-y-4">
+                    <p className="text-lg font-bold text-white">{snap.month}</p>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      {[
+                        { label: 'Net Worth', value: snap.netWorth, prev: prev?.netWorth },
+                        { label: 'Net Income', value: snap.totalIncomeNet, prev: prev?.totalIncomeNet },
+                        { label: 'Total Expenses', value: snap.totalExpenses, prev: prev?.totalExpenses, invertColor: true },
+                        { label: 'Free Cash Flow', value: snap.freeCashFlow, prev: prev?.freeCashFlow },
+                      ].map(({ label, value, prev: prevVal, invertColor }) => {
+                        const d = delta(value, prevVal)
+                        return (
+                          <div key={label} className="card p-4">
+                            <p className="text-xs text-[#64748B] mb-1">{label}</p>
+                            <p className="text-lg font-bold text-white">{formatCurrency(value)}</p>
+                            {d && (
+                              <p className={`text-xs mt-1 font-medium ${
+                                (invertColor ? d.value < 0 : d.value >= 0) ? 'text-emerald-400' : 'text-red-400'
+                              }`}>
+                                {d.value >= 0 ? '+' : ''}{formatCurrency(d.value)} ({d.pct >= 0 ? '+' : ''}{d.pct.toFixed(1)}%)
+                              </p>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      {[
+                        { label: 'Total Assets', value: snap.totalAssets, prev: prev?.totalAssets },
+                        { label: 'Total Debt', value: snap.totalLiabilities, prev: prev?.totalLiabilities, invertColor: true },
+                        { label: 'Savings Rate', value: snap.savingsRate, prev: prev?.savingsRate, isPercent: true },
+                        { label: 'Health Score', value: snap.healthScore, prev: prev?.healthScore, isRaw: true },
+                      ].map(({ label, value, prev: prevVal, invertColor, isPercent, isRaw }) => {
+                        const d = delta(value, prevVal)
+                        return (
+                          <div key={label} className="card p-4">
+                            <p className="text-xs text-[#64748B] mb-1">{label}</p>
+                            <p className="text-lg font-bold text-white">
+                              {isRaw ? value.toFixed(0) : isPercent ? `${value.toFixed(1)}%` : formatCurrency(value)}
+                            </p>
+                            {d && (
+                              <p className={`text-xs mt-1 font-medium ${
+                                (invertColor ? d.value < 0 : d.value >= 0) ? 'text-emerald-400' : 'text-red-400'
+                              }`}>
+                                {d.value >= 0 ? '+' : ''}{isRaw ? d.value.toFixed(1) : isPercent ? `${d.value.toFixed(1)}%` : formatCurrency(d.value)}
+                              </p>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }

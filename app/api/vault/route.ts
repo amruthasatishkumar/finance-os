@@ -15,6 +15,23 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(doc)
 }
 
+export async function PUT(req: NextRequest) {
+  const body = await req.json()
+  const { id, ...data } = body
+  if (!id) return new NextResponse('Missing id', { status: 400 })
+  const doc = await prisma.document.update({
+    where: { id },
+    data: {
+      name: data.name,
+      type: data.type,
+      notes: data.notes || null,
+      isPinned: data.isPinned ?? false,
+      expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
+    },
+  })
+  return NextResponse.json(doc)
+}
+
 export async function DELETE(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('id')
   if (!id) return new NextResponse('Missing id', { status: 400 })

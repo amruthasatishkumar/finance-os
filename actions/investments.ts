@@ -78,15 +78,29 @@ export async function recordContribution(data: {
   amount: number
   type: string
   notes?: string
+  date?: string
 }) {
-  const [contribution] = await Promise.all([
-    prisma.investmentContribution.create({ data }),
-    prisma.investment.update({
-      where: { id: data.investmentId },
-      data: { currentValue: { increment: data.type === 'withdrawal' ? -data.amount : data.amount } },
-    }),
-  ])
+  const contribution = await prisma.investmentContribution.create({
+    data: {
+      investmentId: data.investmentId,
+      amount: data.amount,
+      type: data.type,
+      notes: data.notes ?? null,
+      date: data.date ? new Date(data.date) : new Date(),
+    },
+  })
+  await prisma.investment.update({
+    where: { id: data.investmentId },
+    data: { currentValue: { increment: data.type === 'withdrawal' ? -data.amount : data.amount } },
+  })
   revalidatePath('/investments')
   revalidatePath('/dashboard')
   return contribution
+}
+
+export async function getContributions(investmentId: string) {
+  return prisma.investmentContribution.findMany({
+    where: { investmentId },
+    orderBy: { date: 'desc' },
+  })
 }

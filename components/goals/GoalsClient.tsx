@@ -5,14 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Edit2, Trash2, X, Target, CheckCircle, PauseCircle, Pencil, Check } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Target, CheckCircle, PauseCircle, Pencil, Check, History, ChevronDown, ChevronUp } from 'lucide-react'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { ProgressRing } from '@/components/shared/ProgressRing'
 import { SectionHeader } from '@/components/shared/index'
 import { formatCurrency, monthsUntil } from '@/lib/utils'
-import { createGoal, updateGoal, deleteGoal, addGoalContribution } from '@/actions/goals'
+import { createGoal, updateGoal, deleteGoal, addGoalContribution, getGoalContributions, completeMilestone } from '@/actions/goals'
 import { updateEmergencyFundMonths } from '@/actions/profile'
-import type { Goal, GoalMilestone } from '@/generated/prisma/client'
+import type { Goal, GoalMilestone, GoalContribution } from '@/generated/prisma/client'
 
 type GoalWithMilestones = Goal & { milestones: GoalMilestone[] }
 
@@ -69,6 +69,8 @@ export function GoalsClient({ goals, freeCashFlow, returnRate, inflationRate, ef
   const [editId, setEditId] = useState<string | null>(null)
   const [contribGoalId, setContribGoalId] = useState<string | null>(null)
   const [contribAmount, setContribAmount] = useState('')
+  const [contribNotes, setContribNotes] = useState('')
+  const [contribDate, setContribDate] = useState(new Date().toISOString().split('T')[0])
   const [loading, setLoading] = useState(false)
   const [efMonthsVal, setEfMonthsVal] = useState(efMonths)
   const [efEditing, setEfEditing] = useState(false)
@@ -77,6 +79,10 @@ export function GoalsClient({ goals, freeCashFlow, returnRate, inflationRate, ef
   const [selectedType, setSelectedType] = useState('custom')
   const [efCurrentSaved, setEfCurrentSaved] = useState('')
   const [efMonthsForm, setEfMonthsForm] = useState(String(efMonths))
+  const [historyGoalId, setHistoryGoalId] = useState<string | null>(null)
+  const [contributions, setContributions] = useState<GoalContribution[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [expandedMilestones, setExpandedMilestones] = useState<Set<string>>(new Set())
 
   const efComputedTarget = Math.round((parseInt(efMonthsForm) || efMonthsVal) * totalExpenses)
 
@@ -183,10 +189,40 @@ export function GoalsClient({ goals, freeCashFlow, returnRate, inflationRate, ef
     if (!contribGoalId) return
     const amount = parseFloat(contribAmount)
     if (isNaN(amount) || amount <= 0) return
-    const updated = await addGoalContribution(contribGoalId, amount)
+    const updated = await addGoalContribution(contribGoalId, amount, contribNotes || undefined, contribDate)
     setItems((prev) => prev.map((g) => (g.id === contribGoalId ? { ...g, currentAmount: updated.currentAmount } : g)))
     setContribGoalId(null)
     setContribAmount('')
+    setContribNotes('')
+    setContribDate(new Date().toISOString().split('T')[0])
+  }
+
+  async function openHistory(goalId: string) {
+    setHistoryGoalId(goalId)
+    setHistoryLoading(true)
+    const data = await getGoalContributions(goalId)
+    setContributions(data)
+    setHistoryLoading(false)
+  }
+
+  function toggleMilestones(goalId: string) {
+    setExpandedMilestones((prev) => {
+      const next = new Set(prev)
+      if (next.has(goalId)) next.delete(goalId)
+      else next.add(goalId)
+      return next
+    })
+  }
+
+  async function handleCompleteMilestone(milestoneId: string, goalId: string) {
+    await completeMilestone(milestoneId)
+    setItems((prev) =>
+      prev.map((g) =>
+        g.id === goalId
+          ? { ...g, milestones: g.milestones.map((m) => m.id === milestoneId ? { ...m, isCompleted: true, completedAt: new Date() } : m) }
+          : g
+      )
+    )
   }
 
   return (
@@ -316,13 +352,50 @@ export function GoalsClient({ goals, freeCashFlow, returnRate, inflationRate, ef
                   </div>
                 )}
 
+                {/* Milestones */}
+                {goal.milestones.length > 0 && (
+                  <div className="border-t border-[#334155] pt-3 mb-3">
+                    <button
+                      onClick={() => toggleMilestones(goal.id)}
+                      className="flex items-center gap-1.5 text-xs text-[#64748B] hover:text-[#94A3B8] transition-colors mb-2"
+                    >
+                      {expandedMilestones.has(goal.id) ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      <span>Milestones ({goal.milestones.filter(m => m.isCompleted).length}/{goal.milestones.length})</span>
+                    </button>
+                    {expandedMilestones.has(goal.id) && (
+                      <div className="space-y-1.5">
+                        {goal.milestones.map((m) => (
+                          <div key={m.id} className="flex items-center gap-2">
+                            <button
+                              onClick={() => !m.isCompleted && handleCompleteMilestone(m.id, goal.id)}
+                              disabled={m.isCompleted}
+                              className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${m.isCompleted ? 'bg-emerald-600/30 border-emerald-500/50 text-emerald-400' : 'border-[#475569] hover:border-emerald-500'}`}
+                            >
+                              {m.isCompleted && <Check className="w-2.5 h-2.5" />}
+                            </button>
+                            <span className={`text-xs ${m.isCompleted ? 'line-through text-[#475569]' : 'text-[#94A3B8]'}`}>{m.name}</span>
+                            <span className="text-xs text-[#475569] ml-auto">{formatCurrency(m.amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Action buttons — always visible */}
                 <div className="flex gap-2 mt-auto pt-1">
                   <button
-                    onClick={() => { setContribGoalId(goal.id); setContribAmount('') }}
+                    onClick={() => { setContribGoalId(goal.id); setContribAmount(''); setContribNotes(''); setContribDate(new Date().toISOString().split('T')[0]) }}
                     className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-emerald-600/15 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-600/20 py-2 rounded-xl transition-colors font-medium"
                   >
                     <Plus className="w-3.5 h-3.5" />Add Funds
+                  </button>
+                  <button
+                    onClick={() => openHistory(goal.id)}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs bg-[#1E293B] hover:bg-[#334155] text-[#94A3B8] rounded-xl transition-colors"
+                    title="Contribution history"
+                  >
+                    <History className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={() => startEdit(goal)} className="flex items-center gap-1.5 px-3 py-2 text-xs bg-[#1E293B] hover:bg-[#334155] text-[#94A3B8] rounded-xl transition-colors">
                     <Edit2 className="w-3.5 h-3.5" />Edit
@@ -469,14 +542,42 @@ export function GoalsClient({ goals, freeCashFlow, returnRate, inflationRate, ef
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-40" onClick={() => setContribGoalId(null)} />
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="fixed inset-0 flex items-center justify-center z-50 p-4">
               <div className="bg-[#0B1120] border border-[#1E293B] rounded-2xl p-6 w-full max-w-sm">
-                <h3 className="text-white font-semibold mb-4">Add Contribution</h3>
-                <input
-                  type="number"
-                  value={contribAmount}
-                  onChange={(e) => setContribAmount(e.target.value)}
-                  className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm mb-4 placeholder:text-[#475569]"
-                  placeholder="Amount ($)"
-                />
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-white font-semibold">Add Contribution</h3>
+                  <button onClick={() => setContribGoalId(null)} className="p-1.5 hover:bg-[#1E293B] rounded-lg"><X className="w-4 h-4 text-[#64748B]" /></button>
+                </div>
+                <div className="space-y-3 mb-4">
+                  <div>
+                    <label className="text-xs text-[#94A3B8] mb-1 block font-medium">Amount ($) *</label>
+                    <input
+                      type="number"
+                      value={contribAmount}
+                      onChange={(e) => setContribAmount(e.target.value)}
+                      className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm placeholder:text-[#475569]"
+                      placeholder="e.g. 500"
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#94A3B8] mb-1 block font-medium">Date</label>
+                    <input
+                      type="date"
+                      value={contribDate}
+                      onChange={(e) => setContribDate(e.target.value)}
+                      className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#94A3B8] mb-1 block font-medium">Notes (optional)</label>
+                    <input
+                      type="text"
+                      value={contribNotes}
+                      onChange={(e) => setContribNotes(e.target.value)}
+                      className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm placeholder:text-[#475569]"
+                      placeholder="e.g. Monthly savings transfer"
+                    />
+                  </div>
+                </div>
                 <div className="flex gap-3">
                   <button onClick={() => setContribGoalId(null)} className="flex-1 bg-[#1E293B] hover:bg-[#334155] text-[#94A3B8] py-2.5 rounded-xl text-sm transition-colors">Cancel</button>
                   <button onClick={handleContrib} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl text-sm font-medium transition-colors">Add Funds</button>
@@ -486,6 +587,50 @@ export function GoalsClient({ goals, freeCashFlow, returnRate, inflationRate, ef
           </>
         )}
       </AnimatePresence>
+
+      {/* Contribution History Drawer */}
+      <AnimatePresence>
+        {historyGoalId && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-40" onClick={() => setHistoryGoalId(null)} />
+            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed right-0 top-0 h-full w-full max-w-sm bg-[#0B1120] border-l border-[#1E293B] z-50 overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">Contribution History</h2>
+                    <p className="text-xs text-[#64748B] mt-0.5">{items.find(g => g.id === historyGoalId)?.name}</p>
+                  </div>
+                  <button onClick={() => setHistoryGoalId(null)} className="p-2 hover:bg-[#1E293B] rounded-xl"><X className="w-5 h-5 text-[#64748B]" /></button>
+                </div>
+                {historyLoading ? (
+                  <div className="text-[#64748B] text-sm text-center py-12">Loading...</div>
+                ) : contributions.length === 0 ? (
+                  <div className="text-[#64748B] text-sm text-center py-12">No contributions recorded yet.</div>
+                ) : (
+                  <div className="space-y-3">
+                    {contributions.map((c) => (
+                      <div key={c.id} className="bg-[#1E293B] rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-emerald-400 font-semibold text-sm">+{formatCurrency(c.amount)}</span>
+                          <span className="text-xs text-[#64748B]">{new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        </div>
+                        {c.notes && <p className="text-xs text-[#94A3B8] mt-1">{c.notes}</p>}
+                      </div>
+                    ))}
+                    <div className="border-t border-[#1E293B] pt-3 mt-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-[#64748B]">Total contributed</span>
+                        <span className="text-white font-semibold">{formatCurrency(contributions.reduce((s, c) => s + c.amount, 0))}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
     </div>
   )
 }

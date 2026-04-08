@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, File, Lock, Pin, Trash2, ExternalLink, Upload } from 'lucide-react'
+import { Plus, X, File, Lock, Pin, Trash2, ExternalLink, Upload, Pencil } from 'lucide-react'
 import { SectionHeader } from '@/components/shared/index'
 import type { Document } from '@/generated/prisma/client'
 
@@ -27,6 +27,7 @@ interface Props {
 export function VaultClient({ documents: initialDocs }: Props) {
   const [docs, setDocs] = useState(initialDocs)
   const [showForm, setShowForm] = useState(false)
+  const [editDocId, setEditDocId] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', type: 'passport', notes: '', isPinned: false, expiryDate: '' })
   const [loading, setLoading] = useState(false)
   const [filter, setFilter] = useState('all')
@@ -41,20 +42,47 @@ export function VaultClient({ documents: initialDocs }: Props) {
   async function handleAdd() {
     setLoading(true)
     try {
-      const response = await fetch('/api/vault', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      })
-      if (response.ok) {
-        const doc = await response.json()
-        setDocs((prev) => [doc, ...prev])
-        setShowForm(false)
-        setForm({ name: '', type: 'passport', notes: '', isPinned: false, expiryDate: '' })
+      if (editDocId) {
+        const response = await fetch('/api/vault', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editDocId, ...form }),
+        })
+        if (response.ok) {
+          const updated = await response.json()
+          setDocs((prev) => prev.map((d) => d.id === editDocId ? updated : d))
+          setShowForm(false)
+          setEditDocId(null)
+          setForm({ name: '', type: 'passport', notes: '', isPinned: false, expiryDate: '' })
+        }
+      } else {
+        const response = await fetch('/api/vault', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        })
+        if (response.ok) {
+          const doc = await response.json()
+          setDocs((prev) => [doc, ...prev])
+          setShowForm(false)
+          setForm({ name: '', type: 'passport', notes: '', isPinned: false, expiryDate: '' })
+        }
       }
     } finally {
       setLoading(false)
     }
+  }
+
+  function startEdit(doc: Document) {
+    setEditDocId(doc.id)
+    setForm({
+      name: doc.name,
+      type: doc.type,
+      notes: doc.notes ?? '',
+      isPinned: doc.isPinned,
+      expiryDate: doc.expiryDate ? new Date(doc.expiryDate).toISOString().split('T')[0] : '',
+    })
+    setShowForm(true)
   }
 
   async function handleDelete(id: string) {
@@ -106,7 +134,7 @@ export function VaultClient({ documents: initialDocs }: Props) {
           title="Document Vault"
           subtitle={`${filtered.length} documents tracked`}
           action={
-              <button onClick={() => setShowForm(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded-xl transition-colors font-medium">
+              <button onClick={() => { setEditDocId(null); setForm({ name: '', type: 'passport', notes: '', isPinned: false, expiryDate: '' }); setShowForm(true) }} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded-xl transition-colors font-medium">
               <Plus className="w-4 h-4" />Add Document
             </button>
           }
@@ -137,6 +165,9 @@ export function VaultClient({ documents: initialDocs }: Props) {
                 <button onClick={() => handleDelete(doc.id)} className="p-1.5 hover:bg-red-900/30 rounded-xl transition-colors">
                   <Trash2 className="w-4 h-4 text-red-400" />
                 </button>
+                <button onClick={() => startEdit(doc)} className="p-1.5 hover:bg-[#334155] rounded-xl transition-colors">
+                  <Pencil className="w-4 h-4 text-[#64748B]" />
+                </button>
               </motion.div>
             )
           })}
@@ -147,12 +178,12 @@ export function VaultClient({ documents: initialDocs }: Props) {
       <AnimatePresence>
         {showForm && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-40" onClick={() => setShowForm(false)} />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-40" onClick={() => { setShowForm(false); setEditDocId(null) }} />
             <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed right-0 top-0 h-full w-full max-w-md bg-[#0B1120] border-l border-[#1E293B] z-50">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-semibold text-white">Track Document</h2>
-                  <button onClick={() => setShowForm(false)}><X className="w-5 h-5 text-[#64748B]" /></button>
+                  <h2 className="text-lg font-semibold text-white">{editDocId ? 'Edit Document' : 'Track Document'}</h2>
+                  <button onClick={() => { setShowForm(false); setEditDocId(null) }}><X className="w-5 h-5 text-[#64748B]" /></button>
                 </div>
                 <div className="space-y-4">
                   <div>
@@ -178,7 +209,7 @@ export function VaultClient({ documents: initialDocs }: Props) {
                     Pin this document
                   </label>
                   <button onClick={handleAdd} disabled={loading || !form.name.trim()} className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium py-2.5 rounded-xl transition-colors">
-                    {loading ? 'Saving...' : 'Track Document'}
+                    {loading ? 'Saving...' : editDocId ? 'Update Document' : 'Track Document'}
                   </button>
                 </div>
               </div>

@@ -35,9 +35,15 @@ const AssumptionsSchema = z.object({
 
 export async function updateProfile(data: z.infer<typeof ProfileSchema>) {
   const parsed = ProfileSchema.parse(data)
-  const profile = await prisma.userProfile.findFirst()
-  if (!profile) throw new Error('No profile found')
-  const updated = await prisma.userProfile.update({ where: { id: profile.id }, data: parsed })
+  const existing = await prisma.userProfile.findFirst()
+  let updated
+  if (existing) {
+    updated = await prisma.userProfile.update({ where: { id: existing.id }, data: parsed })
+  } else {
+    updated = await prisma.userProfile.create({ data: parsed })
+    // Also create linked FinancialAssumptions for the new profile
+    await prisma.financialAssumptions.create({ data: { userId: updated.id } })
+  }
   revalidatePath('/settings')
   revalidatePath('/dashboard')
   return updated
@@ -46,7 +52,10 @@ export async function updateProfile(data: z.infer<typeof ProfileSchema>) {
 export async function updateAssumptions(data: z.infer<typeof AssumptionsSchema>) {
   const parsed = AssumptionsSchema.parse(data)
   const assumptions = await prisma.financialAssumptions.findFirst()
-  if (!assumptions) throw new Error('No assumptions found')
+  if (!assumptions) {
+    // If no profile exists yet, nothing to link to — silently skip
+    return
+  }
   const updated = await prisma.financialAssumptions.update({ where: { id: assumptions.id }, data: parsed })
   revalidatePath('/settings')
   revalidatePath('/dashboard')
@@ -56,7 +65,7 @@ export async function updateAssumptions(data: z.infer<typeof AssumptionsSchema>)
 export async function updateEmergencyFundMonths(months: number) {
   const parsed = z.coerce.number().min(1).max(36).parse(months)
   const assumptions = await prisma.financialAssumptions.findFirst()
-  if (!assumptions) throw new Error('No assumptions found')
+  if (!assumptions) return
   await prisma.financialAssumptions.update({ where: { id: assumptions.id }, data: { emergencyFundMonths: parsed } })
   revalidatePath('/dashboard')
   revalidatePath('/settings')
@@ -64,14 +73,14 @@ export async function updateEmergencyFundMonths(months: number) {
 
 export async function completeOnboarding() {
   const profile = await prisma.userProfile.findFirst()
-  if (!profile) throw new Error('No profile found')
+  if (!profile) return
   await prisma.userProfile.update({ where: { id: profile.id }, data: { onboardingComplete: true } })
   revalidatePath('/')
 }
 
 export async function resetOnboarding() {
   const profile = await prisma.userProfile.findFirst()
-  if (!profile) throw new Error('No profile found')
+  if (!profile) return
   await prisma.userProfile.update({ where: { id: profile.id }, data: { onboardingComplete: false } })
   revalidatePath('/')
 }

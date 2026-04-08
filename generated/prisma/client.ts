@@ -117,6 +117,16 @@ export type GoalMilestone = Prisma.GoalMilestoneModel
  */
 export type GoalAllocation = Prisma.GoalAllocationModel
 /**
+ * Model GoalContribution
+ * 
+ */
+export type GoalContribution = Prisma.GoalContributionModel
+/**
+ * Model Budget
+ * 
+ */
+export type Budget = Prisma.BudgetModel
+/**
  * Model FinancialSnapshot
  * 
  */

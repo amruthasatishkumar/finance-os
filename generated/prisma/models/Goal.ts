@@ -338,6 +338,7 @@ export type GoalWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Goal"> | Date | string
   milestones?: Prisma.GoalMilestoneListRelationFilter
   allocations?: Prisma.GoalAllocationListRelationFilter
+  contributions?: Prisma.GoalContributionListRelationFilter
 }
 
 export type GoalOrderByWithRelationInput = {
@@ -361,6 +362,7 @@ export type GoalOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   milestones?: Prisma.GoalMilestoneOrderByRelationAggregateInput
   allocations?: Prisma.GoalAllocationOrderByRelationAggregateInput
+  contributions?: Prisma.GoalContributionOrderByRelationAggregateInput
 }
 
 export type GoalWhereUniqueInput = Prisma.AtLeast<{
@@ -387,6 +389,7 @@ export type GoalWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"Goal"> | Date | string
   milestones?: Prisma.GoalMilestoneListRelationFilter
   allocations?: Prisma.GoalAllocationListRelationFilter
+  contributions?: Prisma.GoalContributionListRelationFilter
 }, "id">
 
 export type GoalOrderByWithAggregationInput = {
@@ -460,6 +463,7 @@ export type GoalCreateInput = {
   updatedAt?: Date | string
   milestones?: Prisma.GoalMilestoneCreateNestedManyWithoutGoalInput
   allocations?: Prisma.GoalAllocationCreateNestedManyWithoutGoalInput
+  contributions?: Prisma.GoalContributionCreateNestedManyWithoutGoalInput
 }
 
 export type GoalUncheckedCreateInput = {
@@ -483,6 +487,7 @@ export type GoalUncheckedCreateInput = {
   updatedAt?: Date | string
   milestones?: Prisma.GoalMilestoneUncheckedCreateNestedManyWithoutGoalInput
   allocations?: Prisma.GoalAllocationUncheckedCreateNestedManyWithoutGoalInput
+  contributions?: Prisma.GoalContributionUncheckedCreateNestedManyWithoutGoalInput
 }
 
 export type GoalUpdateInput = {
@@ -506,6 +511,7 @@ export type GoalUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   milestones?: Prisma.GoalMilestoneUpdateManyWithoutGoalNestedInput
   allocations?: Prisma.GoalAllocationUpdateManyWithoutGoalNestedInput
+  contributions?: Prisma.GoalContributionUpdateManyWithoutGoalNestedInput
 }
 
 export type GoalUncheckedUpdateInput = {
@@ -529,6 +535,7 @@ export type GoalUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   milestones?: Prisma.GoalMilestoneUncheckedUpdateManyWithoutGoalNestedInput
   allocations?: Prisma.GoalAllocationUncheckedUpdateManyWithoutGoalNestedInput
+  contributions?: Prisma.GoalContributionUncheckedUpdateManyWithoutGoalNestedInput
 }
 
 export type GoalCreateManyInput = {
@@ -706,6 +713,20 @@ export type GoalUpdateOneRequiredWithoutAllocationsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.GoalUpdateToOneWithWhereWithoutAllocationsInput, Prisma.GoalUpdateWithoutAllocationsInput>, Prisma.GoalUncheckedUpdateWithoutAllocationsInput>
 }
 
+export type GoalCreateNestedOneWithoutContributionsInput = {
+  create?: Prisma.XOR<Prisma.GoalCreateWithoutContributionsInput, Prisma.GoalUncheckedCreateWithoutContributionsInput>
+  connectOrCreate?: Prisma.GoalCreateOrConnectWithoutContributionsInput
+  connect?: Prisma.GoalWhereUniqueInput
+}
+
+export type GoalUpdateOneRequiredWithoutContributionsNestedInput = {
+  create?: Prisma.XOR<Prisma.GoalCreateWithoutContributionsInput, Prisma.GoalUncheckedCreateWithoutContributionsInput>
+  connectOrCreate?: Prisma.GoalCreateOrConnectWithoutContributionsInput
+  upsert?: Prisma.GoalUpsertWithoutContributionsInput
+  connect?: Prisma.GoalWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.GoalUpdateToOneWithWhereWithoutContributionsInput, Prisma.GoalUpdateWithoutContributionsInput>, Prisma.GoalUncheckedUpdateWithoutContributionsInput>
+}
+
 export type GoalCreateWithoutMilestonesInput = {
   id?: string
   name: string
@@ -726,6 +747,7 @@ export type GoalCreateWithoutMilestonesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   allocations?: Prisma.GoalAllocationCreateNestedManyWithoutGoalInput
+  contributions?: Prisma.GoalContributionCreateNestedManyWithoutGoalInput
 }
 
 export type GoalUncheckedCreateWithoutMilestonesInput = {
@@ -748,6 +770,7 @@ export type GoalUncheckedCreateWithoutMilestonesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   allocations?: Prisma.GoalAllocationUncheckedCreateNestedManyWithoutGoalInput
+  contributions?: Prisma.GoalContributionUncheckedCreateNestedManyWithoutGoalInput
 }
 
 export type GoalCreateOrConnectWithoutMilestonesInput = {
@@ -786,6 +809,7 @@ export type GoalUpdateWithoutMilestonesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   allocations?: Prisma.GoalAllocationUpdateManyWithoutGoalNestedInput
+  contributions?: Prisma.GoalContributionUpdateManyWithoutGoalNestedInput
 }
 
 export type GoalUncheckedUpdateWithoutMilestonesInput = {
@@ -808,6 +832,7 @@ export type GoalUncheckedUpdateWithoutMilestonesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   allocations?: Prisma.GoalAllocationUncheckedUpdateManyWithoutGoalNestedInput
+  contributions?: Prisma.GoalContributionUncheckedUpdateManyWithoutGoalNestedInput
 }
 
 export type GoalCreateWithoutAllocationsInput = {
@@ -830,6 +855,7 @@ export type GoalCreateWithoutAllocationsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   milestones?: Prisma.GoalMilestoneCreateNestedManyWithoutGoalInput
+  contributions?: Prisma.GoalContributionCreateNestedManyWithoutGoalInput
 }
 
 export type GoalUncheckedCreateWithoutAllocationsInput = {
@@ -852,6 +878,7 @@ export type GoalUncheckedCreateWithoutAllocationsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   milestones?: Prisma.GoalMilestoneUncheckedCreateNestedManyWithoutGoalInput
+  contributions?: Prisma.GoalContributionUncheckedCreateNestedManyWithoutGoalInput
 }
 
 export type GoalCreateOrConnectWithoutAllocationsInput = {
@@ -890,6 +917,7 @@ export type GoalUpdateWithoutAllocationsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   milestones?: Prisma.GoalMilestoneUpdateManyWithoutGoalNestedInput
+  contributions?: Prisma.GoalContributionUpdateManyWithoutGoalNestedInput
 }
 
 export type GoalUncheckedUpdateWithoutAllocationsInput = {
@@ -912,6 +940,115 @@ export type GoalUncheckedUpdateWithoutAllocationsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   milestones?: Prisma.GoalMilestoneUncheckedUpdateManyWithoutGoalNestedInput
+  contributions?: Prisma.GoalContributionUncheckedUpdateManyWithoutGoalNestedInput
+}
+
+export type GoalCreateWithoutContributionsInput = {
+  id?: string
+  name: string
+  type: string
+  targetAmount: number
+  currentAmount?: number
+  targetDate?: Date | string | null
+  priority?: number
+  monthlyContrib?: number
+  whyItMatters?: string | null
+  dependencies?: string | null
+  status?: string
+  confidenceScore?: number
+  isInflationAdjusted?: boolean
+  notes?: string | null
+  icon?: string | null
+  color?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  milestones?: Prisma.GoalMilestoneCreateNestedManyWithoutGoalInput
+  allocations?: Prisma.GoalAllocationCreateNestedManyWithoutGoalInput
+}
+
+export type GoalUncheckedCreateWithoutContributionsInput = {
+  id?: string
+  name: string
+  type: string
+  targetAmount: number
+  currentAmount?: number
+  targetDate?: Date | string | null
+  priority?: number
+  monthlyContrib?: number
+  whyItMatters?: string | null
+  dependencies?: string | null
+  status?: string
+  confidenceScore?: number
+  isInflationAdjusted?: boolean
+  notes?: string | null
+  icon?: string | null
+  color?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  milestones?: Prisma.GoalMilestoneUncheckedCreateNestedManyWithoutGoalInput
+  allocations?: Prisma.GoalAllocationUncheckedCreateNestedManyWithoutGoalInput
+}
+
+export type GoalCreateOrConnectWithoutContributionsInput = {
+  where: Prisma.GoalWhereUniqueInput
+  create: Prisma.XOR<Prisma.GoalCreateWithoutContributionsInput, Prisma.GoalUncheckedCreateWithoutContributionsInput>
+}
+
+export type GoalUpsertWithoutContributionsInput = {
+  update: Prisma.XOR<Prisma.GoalUpdateWithoutContributionsInput, Prisma.GoalUncheckedUpdateWithoutContributionsInput>
+  create: Prisma.XOR<Prisma.GoalCreateWithoutContributionsInput, Prisma.GoalUncheckedCreateWithoutContributionsInput>
+  where?: Prisma.GoalWhereInput
+}
+
+export type GoalUpdateToOneWithWhereWithoutContributionsInput = {
+  where?: Prisma.GoalWhereInput
+  data: Prisma.XOR<Prisma.GoalUpdateWithoutContributionsInput, Prisma.GoalUncheckedUpdateWithoutContributionsInput>
+}
+
+export type GoalUpdateWithoutContributionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  targetAmount?: Prisma.FloatFieldUpdateOperationsInput | number
+  currentAmount?: Prisma.FloatFieldUpdateOperationsInput | number
+  targetDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  priority?: Prisma.IntFieldUpdateOperationsInput | number
+  monthlyContrib?: Prisma.FloatFieldUpdateOperationsInput | number
+  whyItMatters?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dependencies?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  confidenceScore?: Prisma.FloatFieldUpdateOperationsInput | number
+  isInflationAdjusted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  milestones?: Prisma.GoalMilestoneUpdateManyWithoutGoalNestedInput
+  allocations?: Prisma.GoalAllocationUpdateManyWithoutGoalNestedInput
+}
+
+export type GoalUncheckedUpdateWithoutContributionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  targetAmount?: Prisma.FloatFieldUpdateOperationsInput | number
+  currentAmount?: Prisma.FloatFieldUpdateOperationsInput | number
+  targetDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  priority?: Prisma.IntFieldUpdateOperationsInput | number
+  monthlyContrib?: Prisma.FloatFieldUpdateOperationsInput | number
+  whyItMatters?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dependencies?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  confidenceScore?: Prisma.FloatFieldUpdateOperationsInput | number
+  isInflationAdjusted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  milestones?: Prisma.GoalMilestoneUncheckedUpdateManyWithoutGoalNestedInput
+  allocations?: Prisma.GoalAllocationUncheckedUpdateManyWithoutGoalNestedInput
 }
 
 
@@ -922,11 +1059,13 @@ export type GoalUncheckedUpdateWithoutAllocationsInput = {
 export type GoalCountOutputType = {
   milestones: number
   allocations: number
+  contributions: number
 }
 
 export type GoalCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   milestones?: boolean | GoalCountOutputTypeCountMilestonesArgs
   allocations?: boolean | GoalCountOutputTypeCountAllocationsArgs
+  contributions?: boolean | GoalCountOutputTypeCountContributionsArgs
 }
 
 /**
@@ -953,6 +1092,13 @@ export type GoalCountOutputTypeCountAllocationsArgs<ExtArgs extends runtime.Type
   where?: Prisma.GoalAllocationWhereInput
 }
 
+/**
+ * GoalCountOutputType without action
+ */
+export type GoalCountOutputTypeCountContributionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.GoalContributionWhereInput
+}
+
 
 export type GoalSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -975,6 +1121,7 @@ export type GoalSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   updatedAt?: boolean
   milestones?: boolean | Prisma.Goal$milestonesArgs<ExtArgs>
   allocations?: boolean | Prisma.Goal$allocationsArgs<ExtArgs>
+  contributions?: boolean | Prisma.Goal$contributionsArgs<ExtArgs>
   _count?: boolean | Prisma.GoalCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["goal"]>
 
@@ -1045,6 +1192,7 @@ export type GoalOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = run
 export type GoalInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   milestones?: boolean | Prisma.Goal$milestonesArgs<ExtArgs>
   allocations?: boolean | Prisma.Goal$allocationsArgs<ExtArgs>
+  contributions?: boolean | Prisma.Goal$contributionsArgs<ExtArgs>
   _count?: boolean | Prisma.GoalCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type GoalIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1055,6 +1203,7 @@ export type $GoalPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   objects: {
     milestones: Prisma.$GoalMilestonePayload<ExtArgs>[]
     allocations: Prisma.$GoalAllocationPayload<ExtArgs>[]
+    contributions: Prisma.$GoalContributionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1471,6 +1620,7 @@ export interface Prisma__GoalClient<T, Null = never, ExtArgs extends runtime.Typ
   readonly [Symbol.toStringTag]: "PrismaPromise"
   milestones<T extends Prisma.Goal$milestonesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Goal$milestonesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$GoalMilestonePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   allocations<T extends Prisma.Goal$allocationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Goal$allocationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$GoalAllocationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  contributions<T extends Prisma.Goal$contributionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Goal$contributionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$GoalContributionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1954,6 +2104,30 @@ export type Goal$allocationsArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   distinct?: Prisma.GoalAllocationScalarFieldEnum | Prisma.GoalAllocationScalarFieldEnum[]
+}
+
+/**
+ * Goal.contributions
+ */
+export type Goal$contributionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the GoalContribution
+   */
+  select?: Prisma.GoalContributionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the GoalContribution
+   */
+  omit?: Prisma.GoalContributionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GoalContributionInclude<ExtArgs> | null
+  where?: Prisma.GoalContributionWhereInput
+  orderBy?: Prisma.GoalContributionOrderByWithRelationInput | Prisma.GoalContributionOrderByWithRelationInput[]
+  cursor?: Prisma.GoalContributionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.GoalContributionScalarFieldEnum | Prisma.GoalContributionScalarFieldEnum[]
 }
 
 /**

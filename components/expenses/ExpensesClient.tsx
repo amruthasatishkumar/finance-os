@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Edit2, Trash2, X, ShoppingCart, Zap, TrendingDown } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, ShoppingCart, Zap, TrendingDown, DollarSign, Check } from 'lucide-react'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { SectionHeader, AlertBanner } from '@/components/shared/index'
 import { formatCurrency, normalizeToMonthly } from '@/lib/utils'
 import { createExpense, updateExpense, deleteExpense } from '@/actions/expenses'
-import type { Expense, ExpenseCategory } from '@/generated/prisma/client'
+import { setBudget, deleteBudget } from '@/actions/budget'
+import type { Expense, ExpenseCategory, Budget } from '@/generated/prisma/client'
 
 const schema = z.object({
   name: z.string().min(1, 'Name required'),
@@ -31,13 +32,19 @@ interface ExpenseWithCategory extends Expense {
 interface Props {
   categories: ExpenseCategory[]
   expenses: ExpenseWithCategory[]
+  budgets: Budget[]
   totalMonthly: number
   fixedMonthly: number
   netMonthly: number
 }
 
-export function ExpensesClient({ categories, expenses, totalMonthly, fixedMonthly, netMonthly }: Props) {
+export function ExpensesClient({ categories, expenses, budgets: initialBudgets, totalMonthly, fixedMonthly, netMonthly }: Props) {
   const [items, setItems] = useState(expenses)
+  const [budgetMap, setBudgetMap] = useState<Record<string, number>>(
+    Object.fromEntries(initialBudgets.map((b) => [b.categoryId, b.monthlyLimit]))
+  )
+  const [budgetEditing, setBudgetEditing] = useState<string | null>(null)
+  const [budgetInput, setBudgetInput] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -89,6 +96,19 @@ export function ExpensesClient({ categories, expenses, totalMonthly, fixedMonthl
     setItems((prev) => prev.filter((e) => e.id !== id))
   }
 
+  async function saveBudget(categoryId: string) {
+    const limit = parseFloat(budgetInput)
+    if (isNaN(limit) || limit < 0) { setBudgetEditing(null); return }
+    if (limit === 0) {
+      await deleteBudget(categoryId)
+      setBudgetMap((prev) => { const next = { ...prev }; delete next[categoryId]; return next })
+    } else {
+      await setBudget(categoryId, limit)
+      setBudgetMap((prev) => ({ ...prev, [categoryId]: limit }))
+    }
+    setBudgetEditing(null)
+  }
+
   return (
     <div className="space-y-8 p-6">
       {expenseRatio > 80 && (
@@ -125,6 +145,71 @@ export function ExpensesClient({ categories, expenses, totalMonthly, fixedMonthl
           )
         })}
       </div>
+
+      {/* Budget Overview */}
+      {categories.filter((cat) => items.filter((e) => e.categoryId === cat.id).length > 0).length > 0 && (
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-white">Budget vs Actuals</h3>
+            <span className="text-xs text-[#64748B]">Click to set limits</span>
+          </div>
+          <div className="space-y-3">
+            {categories.map((cat) => {
+              const catExpenses = items.filter((e) => e.categoryId === cat.id)
+              if (catExpenses.length === 0) return null
+              const actual = catExpenses.reduce((s, e) => s + normalizeToMonthly(e.amount, e.frequency), 0)
+              const limit = budgetMap[cat.id]
+              const pct = limit ? Math.min(100, (actual / limit) * 100) : null
+              const isEditing = budgetEditing === cat.id
+              const isOver = limit ? actual > limit : false
+              return (
+                <div key={cat.id} className="space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm">{cat.icon}</span>
+                      <span className="text-sm text-[#CBD5E1] truncate">{cat.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className={`text-sm font-medium tabular-nums ${isOver ? 'text-red-400' : 'text-white'}`}>{formatCurrency(actual)}</span>
+                      {isEditing ? (
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-[#64748B]">/</span>
+                          <input
+                            type="number"
+                            value={budgetInput}
+                            onChange={(e) => setBudgetInput(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') saveBudget(cat.id); if (e.key === 'Escape') setBudgetEditing(null) }}
+                            autoFocus
+                            className="w-20 bg-[#0B1120] border border-indigo-500 rounded-lg px-2 py-0.5 text-white text-xs text-center focus:outline-none"
+                            placeholder="0"
+                          />
+                          <button onClick={() => saveBudget(cat.id)} className="p-0.5 hover:text-emerald-400 text-[#94A3B8]"><Check className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => setBudgetEditing(null)} className="p-0.5 hover:text-red-400 text-[#94A3B8]"><X className="w-3.5 h-3.5" /></button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => { setBudgetEditing(cat.id); setBudgetInput(limit ? String(limit) : '') }}
+                          className="text-xs text-[#475569] hover:text-[#94A3B8] transition-colors tabular-nums"
+                        >
+                          {limit ? `/ ${formatCurrency(limit)}` : '+ set limit'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {pct !== null && (
+                    <div className="h-1.5 bg-[#334155] rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${isOver ? 'bg-red-500' : pct > 80 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Expense list */}
       <div>

@@ -1,7 +1,6 @@
-import { getFinancialSummary, getSnapshotHistory } from '@/actions/finance'
+﻿import { getFinancialSummary, getSnapshotHistory, refreshSnapshot } from '@/actions/finance'
 import { DashboardClient } from '@/components/dashboard/DashboardClient'
 import { EmptyState } from '@/components/shared'
-import { Target } from 'lucide-react'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
@@ -24,6 +23,9 @@ export default async function DashboardPage() {
       />
     )
   }
+
+  // Auto-save snapshot for the current month (runs silently in background)
+  void refreshSnapshot()
 
   return <DashboardClient summary={summary} history={history} />
 }

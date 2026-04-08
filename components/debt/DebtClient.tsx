@@ -1,17 +1,17 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Edit2, Trash2, X, CreditCard, TrendingDown, Zap, Target } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, CreditCard, TrendingDown, Zap, Target, History } from 'lucide-react'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { SectionHeader, AlertBanner } from '@/components/shared/index'
 import { FinanceBarChart } from '@/components/charts/index'
 import { formatCurrency, formatPercent } from '@/lib/utils'
 import { calcDebtAvalanche, calcDebtSnowball } from '@/lib/calculations/debt'
-import { createLiability, updateLiability, deleteLiability } from '@/actions/debt'
+import { createLiability, updateLiability, deleteLiability, recordDebtPayment, getDebtPayments } from '@/actions/debt'
 import type { Liability, DebtPayment } from '@/generated/prisma/client'
 
 type LiabilityWithPayments = Liability & { payments: DebtPayment[] }
@@ -50,6 +50,18 @@ export function DebtClient({ liabilities, totalDebt, netMonthly, debtBurdenRatio
   const [extraPayment, setExtraPayment] = useState(0)
   const [strategy, setStrategy] = useState<'avalanche' | 'snowball'>('avalanche')
   const [loading, setLoading] = useState(false)
+  // Payment state
+  const [paymentLiabilityId, setPaymentLiabilityId] = useState<string | null>(null)
+  const [payAmount, setPayAmount] = useState('')
+  const [payPrincipal, setPayPrincipal] = useState('')
+  const [payInterest, setPayInterest] = useState('')
+  const [payNotes, setPayNotes] = useState('')
+  const [payDate, setPayDate] = useState(new Date().toISOString().split('T')[0])
+  const [payLoading, setPayLoading] = useState(false)
+  // History state
+  const [historyLiabilityId, setHistoryLiabilityId] = useState<string | null>(null)
+  const [payments, setPayments] = useState<DebtPayment[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -107,6 +119,48 @@ export function DebtClient({ liabilities, totalDebt, netMonthly, debtBurdenRatio
     setValue('lender', l.lender ?? '')
     setValue('notes', l.notes ?? '')
     setShowForm(true)
+  }
+
+  async function handlePayment() {
+    if (!paymentLiabilityId) return
+    const amount = parseFloat(payAmount)
+    const principal = parseFloat(payPrincipal)
+    const interest = parseFloat(payInterest)
+    if (isNaN(amount) || amount <= 0) return
+    setPayLoading(true)
+    try {
+      await recordDebtPayment({
+        liabilityId: paymentLiabilityId,
+        amount,
+        principal: isNaN(principal) ? amount : principal,
+        interest: isNaN(interest) ? 0 : interest,
+        notes: payNotes || undefined,
+        date: payDate,
+      })
+      // Update the principalBalance in our local state
+      const principalPaid = isNaN(principal) ? amount : principal
+      setItems((prev) => prev.map((l) =>
+        l.id === paymentLiabilityId
+          ? { ...l, principalBalance: Math.max(0, l.principalBalance - principalPaid) }
+          : l
+      ))
+      setPaymentLiabilityId(null)
+      setPayAmount('')
+      setPayPrincipal('')
+      setPayInterest('')
+      setPayNotes('')
+      setPayDate(new Date().toISOString().split('T')[0])
+    } finally {
+      setPayLoading(false)
+    }
+  }
+
+  async function openHistory(liabilityId: string) {
+    setHistoryLiabilityId(liabilityId)
+    setHistoryLoading(true)
+    const data = await getDebtPayments(liabilityId)
+    setPayments(data)
+    setHistoryLoading(false)
   }
 
   async function handleDelete(id: string) {
@@ -228,6 +282,19 @@ export function DebtClient({ liabilities, totalDebt, netMonthly, debtBurdenRatio
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3 justify-end">
+                  <button
+                    onClick={() => { setPaymentLiabilityId(l.id); setPayAmount(String(l.minimumPayment)); setPayPrincipal(''); setPayInterest(''); setPayNotes(''); setPayDate(new Date().toISOString().split('T')[0]) }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-emerald-600/15 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-600/20 rounded-xl transition-colors font-medium"
+                  >
+                    <Plus className="w-3 h-3" />Record Payment
+                  </button>
+                  <button
+                    onClick={() => openHistory(l.id)}
+                    className="p-1.5 hover:bg-[#334155] rounded-lg transition-colors"
+                    title="Payment history"
+                  >
+                    <History className="w-3.5 h-3.5 text-[#64748B]" />
+                  </button>
                   <button onClick={() => startEdit(l)} className="p-1.5 hover:bg-[#334155] rounded-lg transition-colors"><Edit2 className="w-3.5 h-3.5 text-[#64748B]" /></button>
                   <button onClick={() => handleDelete(l.id)} className="p-1.5 hover:bg-red-900/30 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
                 </div>
@@ -290,6 +357,105 @@ export function DebtClient({ liabilities, totalDebt, netMonthly, debtBurdenRatio
           </motion.div>
         </>
       )}
+
+      {/* Record Payment Modal */}
+      <AnimatePresence>
+        {paymentLiabilityId && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-40" onClick={() => setPaymentLiabilityId(null)} />
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="fixed inset-0 flex items-center justify-center z-50 p-4">
+              <div className="bg-[#0B1120] border border-[#1E293B] rounded-2xl p-6 w-full max-w-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-white font-semibold">Record Payment</h3>
+                  <button onClick={() => setPaymentLiabilityId(null)} className="p-1.5 hover:bg-[#1E293B] rounded-lg"><X className="w-4 h-4 text-[#64748B]" /></button>
+                </div>
+                <div className="space-y-3 mb-4">
+                  <div>
+                    <label className="text-xs text-[#94A3B8] mb-1 block font-medium">Total Payment ($) *</label>
+                    <input type="number" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} autoFocus
+                      className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm placeholder:text-[#475569]" placeholder="e.g. 450" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-[#94A3B8] mb-1 block font-medium">Principal ($)</label>
+                      <input type="number" value={payPrincipal} onChange={(e) => setPayPrincipal(e.target.value)}
+                        className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm placeholder:text-[#475569]" placeholder="Auto" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-[#94A3B8] mb-1 block font-medium">Interest ($)</label>
+                      <input type="number" value={payInterest} onChange={(e) => setPayInterest(e.target.value)}
+                        className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm placeholder:text-[#475569]" placeholder="0" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#94A3B8] mb-1 block font-medium">Date</label>
+                    <input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)}
+                      className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#94A3B8] mb-1 block font-medium">Notes (optional)</label>
+                    <input type="text" value={payNotes} onChange={(e) => setPayNotes(e.target.value)}
+                      className="w-full bg-[#1E293B] border border-[#334155] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm placeholder:text-[#475569]" placeholder="e.g. Extra payment" />
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => setPaymentLiabilityId(null)} className="flex-1 bg-[#1E293B] hover:bg-[#334155] text-[#94A3B8] py-2.5 rounded-xl text-sm transition-colors">Cancel</button>
+                  <button onClick={handlePayment} disabled={payLoading} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white py-2.5 rounded-xl text-sm font-medium transition-colors">
+                    {payLoading ? 'Saving...' : 'Record Payment'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Payment History Drawer */}
+      <AnimatePresence>
+        {historyLiabilityId && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-40" onClick={() => setHistoryLiabilityId(null)} />
+            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed right-0 top-0 h-full w-full max-w-sm bg-[#0B1120] border-l border-[#1E293B] z-50 overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">Payment History</h2>
+                    <p className="text-xs text-[#64748B] mt-0.5">{items.find(l => l.id === historyLiabilityId)?.name}</p>
+                  </div>
+                  <button onClick={() => setHistoryLiabilityId(null)} className="p-2 hover:bg-[#1E293B] rounded-xl"><X className="w-5 h-5 text-[#64748B]" /></button>
+                </div>
+                {historyLoading ? (
+                  <div className="text-[#64748B] text-sm text-center py-12">Loading...</div>
+                ) : payments.length === 0 ? (
+                  <div className="text-[#64748B] text-sm text-center py-12">No payments recorded yet.</div>
+                ) : (
+                  <div className="space-y-3">
+                    {payments.map((p) => (
+                      <div key={p.id} className="bg-[#1E293B] rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-emerald-400 font-semibold text-sm">{formatCurrency(p.amount)}</span>
+                          <span className="text-xs text-[#64748B]">{new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        </div>
+                        <div className="flex gap-3 text-xs text-[#94A3B8]">
+                          <span>Principal: <span className="text-white">{formatCurrency(p.principal)}</span></span>
+                          <span>Interest: <span className="text-white">{formatCurrency(p.interest)}</span></span>
+                        </div>
+                        {p.notes && <p className="text-xs text-[#64748B] mt-1.5">{p.notes}</p>}
+                      </div>
+                    ))}
+                    <div className="border-t border-[#1E293B] pt-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-[#64748B]">Total paid</span>
+                        <span className="text-white font-semibold">{formatCurrency(payments.reduce((s, p) => s + p.amount, 0))}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

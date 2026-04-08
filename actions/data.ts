@@ -8,9 +8,11 @@ import { revalidatePath } from 'next/cache'
  */
 export async function clearFinancialData() {
   // Delete child records first (foreign key order)
+  await prisma.goalContribution.deleteMany()
   await prisma.goalAllocation.deleteMany()
   await prisma.goalMilestone.deleteMany()
   await prisma.goal.deleteMany()
+  await prisma.budget.deleteMany()
   await prisma.debtPayment.deleteMany()
   await prisma.liability.deleteMany()
   await prisma.investmentContribution.deleteMany()

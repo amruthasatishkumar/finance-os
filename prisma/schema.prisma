@@ -297,6 +297,7 @@ model Goal {
 
   milestones           GoalMilestone[]
   allocations          GoalAllocation[]
+  contributions        GoalContribution[]
 
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
@@ -325,6 +326,24 @@ model GoalAllocation {
   notes    String?
 
   createdAt DateTime @default(now())
+}
+
+model GoalContribution {
+  id        String   @id @default(cuid())
+  goalId    String
+  goal      Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  amount    Float
+  notes     String?
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+}
+
+model Budget {
+  id           String   @id @default(cuid())
+  categoryId   String   @unique
+  monthlyLimit Float
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 // ─────────────────────────────────────────

@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { SectionHeader } from '@/components/shared/index'
 import { FinanceAreaChart, FinanceBarChart, FinanceLineChart } from '@/components/charts/index'
@@ -11,25 +11,37 @@ interface Props {
   snapshots: any[]
 }
 
-export function ReportsClient({ summary, snapshots }: Props) {
-  // ── Charts ──────────────────────────────────────────────────────────────
-  const reversed = useMemo(() => [...snapshots].reverse(), [snapshots])
+const TIME_FILTERS = [
+  { label: '3M', months: 3 },
+  { label: '6M', months: 6 },
+  { label: '1Y', months: 12 },
+  { label: 'All', months: 999 },
+]
 
-  const netWorthHistory = reversed.map((s: any) => ({
+export function ReportsClient({ summary, snapshots }: Props) {
+  const [timeFilter, setTimeFilter] = useState(12)
+
+  // ── Charts ──────────────────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    const sorted = [...snapshots].sort((a: any, b: any) => a.month.localeCompare(b.month))
+    return sorted.slice(-timeFilter)
+  }, [snapshots, timeFilter])
+
+  const netWorthHistory = filtered.map((s: any) => ({
     label: s.month,
     netWorth: Math.round(s.netWorth),
     assets: Math.round(s.totalAssets),
     liabilities: Math.round(s.totalLiabilities),
   }))
 
-  const cashFlowHistory = reversed.map((s: any) => ({
+  const cashFlowHistory = filtered.map((s: any) => ({
     label: s.month,
     income: Math.round(s.totalIncomeNet),
     expenses: Math.round(s.totalExpenses),
     fcf: Math.round(s.freeCashFlow),
   }))
 
-  const scoreHistory = reversed.map((s: any) => ({
+  const scoreHistory = filtered.map((s: any) => ({
     label: s.month,
     health: Math.round(s.healthScore),
   }))
@@ -42,6 +54,20 @@ export function ReportsClient({ summary, snapshots }: Props) {
   return (
     <div className="flex flex-col h-full">
       <div className="space-y-8 p-6 overflow-y-auto flex-1">
+          {/* Time filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[#64748B] font-medium mr-1">Time range:</span>
+            {TIME_FILTERS.map((f) => (
+              <button
+                key={f.label}
+                onClick={() => setTimeFilter(f.months)}
+                className={`px-3 py-1.5 text-xs rounded-xl transition-colors font-medium ${timeFilter === f.months ? 'bg-indigo-600 text-white' : 'bg-[#1E293B] text-[#94A3B8] hover:bg-[#334155]'}`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
           {/* Top metrics */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricCard
